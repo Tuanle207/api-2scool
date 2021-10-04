@@ -1,0 +1,50 @@
+{
+  "culture": "en",
+  "texts": {
+    "Menu:Home": "Home",
+    "Welcome": "Welcome",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io.",
+    "Permission:Courses": "Courses Management",
+    "Permission:Courses:Courses": "Courses",
+    "Permission:Courses:Courses.Create": "Create courses",
+    "Permission:Courses:Courses.Update": "Update courses",
+    "Permission:Courses:Courses.Delete": "Delete courses",
+    "Permission:Courses:Courses.Get": "Get course detail",
+    "Permission:Courses:Courses.GetAll": "Get courses",
+
+    "Permission:Dcp": "Discipline Management",
+    "Permission:Dcp:DcpReports": "Discipline Reports",
+    "Permission:Dcp:DcpReports.CreateNewDcpReport": "Create new report",
+    "Permission:Dcp:DcpReports.GetDcpReportApprovalHistory": "Get reports for approval",
+    "Permission:Dcp:DcpReports.DcpReportApproval": "Accept/reject reports",
+    "Permission:Dcp:DcpReports.GetMyDcpReport": "Get my created reports",
+    "Permission:Dcp:DcpReports.RemoveDcpReport": "Remove reports",
+    "Permission:Dcp:DcpReports.GetDcpReportDetail": "Get Report detail",
+    "Permission:Dcp:DcpReports.GetDcpReportDetailApproval": "Get Report detail for approval",
+    "Permission:Dcp:DcpReports.UpdateDcpReport": "Update Reports",
+
+    "Permission:Dcp:LRReports": "Lesson Registration Reports",
+    "Permission:Dcp:LRReports.CreateNewLRReport": "Create new report",
+    "Permission:Dcp:LRReports.GetLRApprovalHistory": "Get reports for approval",
+    "Permission:Dcp:LRReports.LRReportApproval": "Accept/reject reports",
+    "Permission:Dcp:LRReports.GetMyLRReport": "Get my created reports",
+    "Permission:Dcp:LRReports.RemoveLRReport": "Remove reports",
+    "Permission:Dcp:LRReports.GetLRReportDetail": "Get Report detail",
+    "Permission:Dcp:LRReports.GetLRReportDetailApproval": "Get Report detail for approval",
+    "Permission:Dcp:LRReports.UpdateLRReport": "Update Reports",
+
+
+
+    "Permission:Stats": "Statistics Reports Management",
+    "Permission:Stats:Rankings": "Get rankings report",
+    "Permission:Stats:Statistics": "Get statistics report",
+
+    "Permission:TaskAssignment": "Report Schedule Assignment",
+    "Permission:TaskAssignment:AssignDcpReport": "Assign discipline report schedule",
+    "Permission:TaskAssignment:AssignLessonRegisterReport": "Assign lesson registration report schedule",
+    "Permission:TaskAssignment:GetScheduleList": "Get assgined schedule list",
+    "Permission:TaskAssignment:GetMyAssignedSchedule": "Get my assigned schedule"
+
+
+  }
+}

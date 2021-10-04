@@ -1,0 +1,232 @@
+﻿[
+  {
+    "criteriaName": "Nề nếp đầu buổi",
+    "items": [
+      {
+        "regulationName": "Chậm học",
+        "description": "Đi học đúng giờ, có mặt ở lớp trước khi trống đánh vào sinh hoạt 15 phút",
+        "note": "Đội ANHĐ, đội cờ đỏ làm việc trong suốt giờ sinh hoạt 15’ nên ko tính lỗi vào chậm; cá nhân giữ SĐB, cá nhân sắp xếp xe đạp",
+        "point": 1
+      },
+      {
+        "regulationName": "Trực nhật chậm, không sạch",
+        "description": "Hoàn thành trước giờ sinh hoạt 15 phút; phòng học, hành lang,các khu vực được phân công sạch sẽ; bàn ghế sắp xếp ngay ngắn, đúng quy định; bảng lau sạch và ghi đúng khẩu hiệu thi đua ( nếu có); phân loại rác (rác thải và rác tái chế), không để các loại rác trong lớp, đổ các loại rác đúng nơi quy định; dụng cụ vệ sinh ( chổi , khăn lau bảng) phải được treo lên móc gọn gàng.",
+        "note": "",
+        "point": 5
+      },
+      {
+        "regulationName": "Không trực nhật",
+        "description": "Hoàn thành trước giờ sinh hoạt 15 phút",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Trang trí lớp học không đạt",
+        "description": "Có đầy đủ khăn trải bàn GV, lọ hoa, giá sách + sách, giá thau + thau nước rửa tay, giá nước + bình nước + cốc uống nước, khăn lau bảng, ảnh Bác, các khẩu hiệu, …",
+        "note": "",
+        "point": 1
+      },
+      {
+        "regulationName": "Sinh hoạt 15 phút không đạt",
+        "description": "Đảm bảo về thời gian, có chất lượng, đúng nội dung (thứ 3,5: văn nghệ; thứ 4,6: chữa bài tập; thứ 7: đọc sách) hoặc GVCN sinh hoạt theo nội dung của lớp.",
+        "note": "Triển khai chậm, sai nội dung, không nghiêm túc, đối phó",
+        "point": 5
+      },
+      {
+        "regulationName": "Không sinh hoạt 15 phút đầu giờ",
+        "description": "",
+        "note": "",
+        "point": 10
+      }
+    ]
+  },
+  {
+    "criteriaName": "Nề nếp tập trung",
+    "items": [
+      {
+        "regulationName": "Không đủ ghế ngồi, biển lớp",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Tập trung, hàng ngũ lộn xộn",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Vắng, nói chuyện riêng, làm việc riêng, bỏ vị trí",
+        "description": "",
+        "note": "",
+        "point": 1
+      },
+      {
+        "regulationName": "không ra khu vực tập trung",
+        "description": "Kể cả có lý do nhưng không báo lại cho cán bộ đoàn và ban an ninh trực",
+        "note": "",
+        "point": 2
+      }
+    ]
+  },
+  {
+    "criteriaName": "Nề nếp xe đạp - xe điện - xe máy",
+    "items": [
+      {
+        "regulationName": "Đi xe máy đến trường không có giấy tờ hợp lệ",
+        "description": "",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Vi phạm PL về TTATGT ở khu vực trường kiểm soát",
+        "description": "",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Để xe ở ngoài khu vực trường",
+        "description": "",
+        "note": "",
+        "point": 5
+      },
+      {
+        "regulationName": "Đi xe trong trường",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Nhà xe bẩn, xe lộn xộn",
+        "description": "",
+        "note": "",
+        "point": 2
+      }
+    ]
+  },
+  {
+    "criteriaName": "Các nề nếp khác",
+    "items": [
+      {
+        "regulationName": "Đồng phục",
+        "description": "Áo: áo sơ mi đúng mẫu của trường (thứ 2,3,5,6: mặc áo trắng; thứ 4,7: mặc áo đoàn )\nQuần: quần tây tối màu\nNữ mặc áo dài trắng, nam sơ vin trong giờ chào cờ đầu tuần, các dịp lễ, những ngày học có đón các đoàn khách đến trường.\nPhù hiệu: đúng mẫu, đúng quy cách (không thêm ảnh hoặc các đồ trang trí khác)\nGiày, dép quai hậu: (luôn thường trực, không quy định theo thời tiết, không đi dép cross)\nMũ trắng: (dùng trong các buổi tập trung – nếu cần\nTrời lạnh: mặc thêm áo đồng phục mùa đông.",
+        "note": "",
+        "point": 1
+      },
+      {
+        "regulationName": "Chuyên cần",
+        "description": "Vắng học. Những trường hợp hs đau ốm phải điều trị lâu dài, hoặc vận động viên của Sở TDTT đi thi đấu GVCN phải có thông báo với Đoàn trường.",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Đầu tóc",
+        "description": "Nam nữ đầu tóc gọn gàng, không nhuộm tóc; nam nữ không được cắt những kiểu tóc kì dị,phản cảm: quá ngắn, quá dài, kẻ đường ngôi, vẽ hình, …",
+        "note": "Học sinh có xăm trổ sẽ xét riêng từng trường hợp cụ thể.",
+        "point": 5
+      },
+      {
+        "regulationName": "Không được nói tục, chửi bậy.",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Không được mang các loại đồ ăn về lớp.",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Không được vứt rác bừa bãi, đổ rác sai quy định.",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Không được trèo tường rào, bỏ tiết.",
+        "description": "",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Quy định về các loại báo cáo, văn bản",
+        "description": "nộp đúng thời gian quy định của các loại báo cáo; báo cáo hàng tuần nộp vào tiết cuối cùng của buổi học sáng thứ 6 tuần đó",
+        "note": "",
+        "point": 1
+      },
+      {
+        "regulationName": "Bí thư, lớp trưởng, cờ đỏ, ANHĐ, lực lượng xung kích: vắng hội họp, điều động (không phép); không làm nhiệm vụ hoặc làm nhiệm vụ không nghiêm túc.",
+        "description": "",
+        "note": "",
+        "point": 2
+      },
+      {
+        "regulationName": "Không được chống đối, bỏ chạy hoặc có hành vi đe dọa đối với cán bộ Đoàn, đội an ninh trường học, đội cờ đỏ, đội thanh niên xung kích…khi lực lượng này làm nhiệm vụ để đảm bảo nền nếp nhà trường.",
+        "description": "",
+        "note": "",
+        "point": 10
+      },
+      { 
+        "regulationName": "Không tham gia các cuộc điều động, các hội thi, các đợt phát động",
+        "description": "",
+        "note": "",
+        "point": 20
+      },
+      { 
+        "regulationName": "Tham gia các cuộc điều động, các hội thi, các đợt phát động không đủ số lượng, không đảm bảo chất lượng, không đảm bảo thời gian theo quy định.",
+        "description": "",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Không được gian lận trong thi cử",
+        "description": "số liệu do Ban chuyên môn cung cấp",
+        "note": "",
+        "point": 3
+      },
+      {
+        "regulationName": "Không được hút thuốc lá hoặc mang theo thuốc lá; không được đánh bài; không được sử dụng rượu bia và các chất kích thích trong trường học.",
+        "description": "",
+        "note": "",
+        "point": 5
+      },
+      {
+        "regulationName": "Không được đưa ĐTDĐ vào trường học trong các giờ học chính khóa + học thêm buổi chiều + các hoạt động giáo dục tại trường; không được  sử dụng các phương tiện thu - phát sóng, máy nghe nhạc trong giờ học.",
+        "description": "Trừ các học sinh tham gia công tác theo dõi nề nếp như bí thư, cờ đỏ, ...",
+        "note": "",
+        "point": 5
+      },
+      {
+        "regulationName": "Không được mang hung khí, các chất gây cháy nổ hoặc các chất gây nghiện đến trường.",
+        "description": "Cá nhân vi phạm bị xử lí kỉ luật theo quy định của nhà trường.",
+        "note": "",
+        "point": 10
+      },
+      {
+        "regulationName": "Không được gây gổ, đánh nhau, trộm cắp.",
+        "description": "",
+        "note": "",
+        "point": 30
+      },
+      {
+        "regulationName": "Không được vô lễ với CB, GV, nhân viên nhà trường.",
+        "description": "",
+        "note": "",
+        "point": 40
+      },
+      {
+        "regulationName": "Không được vi phạm pháp luật về TTATGT và các vi phạm pháp luật khác.",
+        "description": "Có thông báo từ công an hay các cơ quan chức năng khác. Cá nhân vi phạm bị hạ bậc hạnh kiểm hoặc bị xử lí kỉ luật theo quy định của nhà trường.",
+        "note": "",
+        "point": 30
+      },
+      {
+        "regulationName": "Sử dụng mạng xã hội không đúng cách",
+        "description": "Không được sử dụng mạng xã hội không phù hợp với chuẩn mực đạo đức; đe dọa, nói xấu người khác; đưa thông tin giả; nói sai sự thật, sai quan điểm, sai chủ trương, chính sáchcủa Đảng và pháp luật Nhà nước; tuyên truyền, kích động, lôi kéo người khác làm mất an ninh trật tự, an toàn xã hội.",
+        "note": "",
+        "point": 50
+      }
+    ]
+  }
+]
