@@ -41,7 +41,8 @@ namespace Scool.Application.ApplicationServices
                     .Include(e => e.FormTeacher)
                     .Include(e => e.Grade);
 
-            var items = ObjectMapper.Map<List<Class>, List<ClassForListDto>>(await query.ToListAsync());
+            var items = await query.Select(x => ObjectMapper.Map<Class, ClassForListDto>(x))
+                .ToListAsync();
             var totalCount = await _classRepo.Filter(input.Filter).CountAsync();
 
             return new PagingModel<ClassForListDto>(items, totalCount, pageIndex, pageSize);
@@ -54,8 +55,9 @@ namespace Scool.Application.ApplicationServices
                     .Include(e => e.FormTeacher)
                     .Include(e => e.Grade)
                     .Include(e => e.Students)
+                    .Select(x => ObjectMapper.Map<Class, ClassDto>(x))
                     .FirstOrDefaultAsync();
-            return ObjectMapper.Map<Class, ClassDto>(entity);
+            return entity;
         }
 
         public async Task<PagingModel<ClassForSimpleListDto>> GetSimpleListAsync()

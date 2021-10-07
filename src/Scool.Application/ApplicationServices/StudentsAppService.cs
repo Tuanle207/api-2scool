@@ -39,7 +39,8 @@ namespace Scool.Application.ApplicationServices
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Class);
 
-            var items = ObjectMapper.Map<List<Student>, List<StudentDto>>(await query.ToListAsync());
+            var items = await query.Select(x => ObjectMapper.Map<Student, StudentDto>(x))
+                .ToListAsync();
             var totalCount = await _studentRepo.Filter(input.Filter).CountAsync();
 
             return new PagingModel<StudentDto>(items, totalCount, pageIndex, pageSize);

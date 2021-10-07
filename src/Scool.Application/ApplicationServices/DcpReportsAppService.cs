@@ -300,8 +300,6 @@ namespace Scool.ApplicationServices
 
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x)).ToListAsync();
 
-            //var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
-
             // get creators
             var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
             var creators = await _usersRepo
@@ -413,7 +411,8 @@ namespace Scool.ApplicationServices
                 .ThenInclude(e => e.Faults)
                 .ThenInclude(e => e.Regulation);
 
-            var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
 
             var totalCount = await query.CountAsync();
 
