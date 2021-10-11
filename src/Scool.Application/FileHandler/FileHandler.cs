@@ -12,7 +12,7 @@ using Volo.Abp.Users;
 
 namespace Scool.Application.FileHandler
 {
-    public class FileHandler : IScopedDependency
+    public class FileHandler : IFileHandler, IScopedDependency
     {
         private readonly IWebHostEnvironment _env;
         private readonly ICurrentUser _currentUser;

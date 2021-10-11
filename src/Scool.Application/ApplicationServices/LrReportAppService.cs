@@ -36,14 +36,14 @@ namespace Scool.ApplicationServices
         private readonly IRepository<LessonsRegister, Guid> _leRepo;
         private readonly IRepository<LessonRegisterPhotos, Guid> _lePhotoRepo;
         private readonly ICurrentUser _currentUser;
-        private readonly FileHandler _fileHandler;
+        private readonly IFileHandler _fileHandler;
         private readonly IGuidGenerator _guidGenerator;
 
         public LrReportAppService(
             IRepository<LessonsRegister, Guid> leRepo,
             IRepository<LessonRegisterPhotos, Guid> lePhotoRepo,
             ICurrentUser currentUser,
-            FileHandler fileHandler,
+            IFileHandler fileHandler,
             IGuidGenerator guidGenerator 
             ) : base(leRepo)
         {

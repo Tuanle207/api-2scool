@@ -127,6 +127,8 @@ namespace Scool
                     options.Authority = configuration["AuthServer:Authority"];
                     options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                     options.Audience = "Scool";
+                    // TODO: set this temporary for dev
+                    options.TokenValidationParameters.ValidateIssuer = false;
                     options.BackchannelHttpHandler = new HttpClientHandler
                     {
                         ServerCertificateCustomValidationCallback =
