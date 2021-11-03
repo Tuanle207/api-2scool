@@ -35,13 +35,14 @@ namespace Scool.Application.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             var query = _studentRepo.Filter(input.Filter);
+            var totalCount = await query.CountAsync();
+
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Class);
 
             var items = await query.Select(x => ObjectMapper.Map<Student, StudentDto>(x))
                 .ToListAsync();
-            var totalCount = await _studentRepo.Filter(input.Filter).CountAsync();
 
             return new PagingModel<StudentDto>(items, totalCount, pageIndex, pageSize);
         }

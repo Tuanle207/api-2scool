@@ -49,9 +49,19 @@ namespace Scool.Infrastructure.Linq
             var objValues = codes.Cast<object>().ToList();
             var type = typeof(List<object>);
             var methodInfo = type.GetMethod("Contains", new Type[] { typeof(object) });
-            var list = Expression.Constant(objValues);
-            var body = Expression.Call(list, methodInfo, left);
-            return body;
+            var list = Expression.Constant(objValues, typeof(List<object>));
+            var convertedLeft = Expression.Convert(left, typeof(object));
+
+            try
+            {
+                var body = Expression.Call(list, methodInfo, convertedLeft);
+                return body;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return null;
         }
 
         private static Expression MakeString(Expression source)
