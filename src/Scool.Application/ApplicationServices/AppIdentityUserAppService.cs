@@ -16,6 +16,7 @@ using Scool.Application.IApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Application.Dtos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Scool.ApplicationServices
 {
@@ -60,10 +61,12 @@ namespace Scool.ApplicationServices
             return result;
         }
 
-        public async Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment()
+        [HttpGet("/api/app/app-identity-user/user-for-task-assignment")]
+        public async Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment([FromQuery(Name = "classId")]Guid? classId)
         {
             var items = await _userProfilesRepository.AsQueryable()
-                .Where(x => x.ClassId != null)
+                .WhereIf(classId is not null, x => x.ClassId == classId)
+                .WhereIf(classId is null, x => x.ClassId != null)
                 .Include(x => x.Class)
                 .Select(x => ObjectMapper.Map<UserProfile, UserForTaskAssignmentDto>(x)).ToListAsync();
 

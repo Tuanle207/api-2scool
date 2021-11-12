@@ -1,8 +1,11 @@
-﻿using Scool.Application.Dtos;
+﻿using Scool.Application.Contracts.Dtos;
+using Scool.Application.Dtos;
 using Scool.Infrastructure.ApplicationServices;
+using Scool.Infrastructure.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Scool.Application.IApplicationServices
 {
@@ -14,5 +17,6 @@ namespace Scool.Application.IApplicationServices
         CreateUpdateGradeDto
     >
     {
+        Task<PagingModel<GradeForSimpleListDto>> GetSimpleListAsync();
     }
 }

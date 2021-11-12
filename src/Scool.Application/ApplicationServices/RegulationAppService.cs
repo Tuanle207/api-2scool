@@ -62,5 +62,26 @@ namespace Scool.ApplicationServices
 
             return new PagingModel<RegulationDto>(items, totalCount, pageIndex, pageSize);
         }
+
+        public async override Task<RegulationDto> UpdateAsync(Guid id, CreateUpdateRegulationDto input)
+        {
+            // Change state of this regulation
+            var oldRegulation = await _regulationsRepo.FirstOrDefaultAsync(x => x.Id == id);
+            oldRegulation.IsActive = false;
+            await CurrentUnitOfWork.SaveChangesAsync();
+
+            // Create new regulation as new updation
+            var result = await CreateAsync(input);
+            return result;
+        }
+
+        public async override Task<RegulationDto> CreateAsync(CreateUpdateRegulationDto input)
+        {
+            var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
+            await _regulationsRepo.InsertAsync(newRegulation);
+            
+            var result = ObjectMapper.Map<Regulation, RegulationDto>(newRegulation);
+            return result;
+        }
     }
 }

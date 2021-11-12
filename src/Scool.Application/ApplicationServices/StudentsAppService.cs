@@ -37,9 +37,14 @@ namespace Scool.Application.ApplicationServices
             var query = _studentRepo.Filter(input.Filter);
             var totalCount = await query.CountAsync();
 
-            query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
-            query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Class);
+
+            query = string.IsNullOrEmpty(input.SortName) ? 
+                query.OrderBy(x => x.Class.Name)
+                .OrderBy(x => x.Name) : 
+                query.OrderBy(input.SortName, input.Ascend);
+                
+            query = query.Page(pageIndex, pageSize);
 
             var items = await query.Select(x => ObjectMapper.Map<Student, StudentDto>(x))
                 .ToListAsync();
