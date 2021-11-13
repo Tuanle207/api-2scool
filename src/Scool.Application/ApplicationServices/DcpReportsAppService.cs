@@ -398,6 +398,8 @@ namespace Scool.ApplicationServices
                 query = query.Where(e => e.CreationTime.Date <= endDate.Date);
             }
 
+            int totalCount = await query.CountAsync();
+
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
             query = query.Page(pageIndex, pageSize);
             query = query
@@ -414,8 +416,6 @@ namespace Scool.ApplicationServices
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .ToListAsync();
 
-            var totalCount = await query.CountAsync();
-
             return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
 
@@ -424,13 +424,7 @@ namespace Scool.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
-            var query = _dcpReportsRepo.AsQueryable();
-
-            var statusList = input.Filter.Where(x => x.Key == "Status").Select(x => x.Value).ToList();
-            if (statusList.Count > 0)
-            {
-                query = query.Where(x => statusList.Contains(x.Status));
-            }
+            var query = _dcpReportsRepo.Filter(input.Filter);
 
             var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
             if (startDateFilter != null)
@@ -445,6 +439,8 @@ namespace Scool.ApplicationServices
                 var endDate = DateTime.ParseExact(endDateFilter.Value, "MM/dd/yyyy", null);
                 query = query.Where(e => e.CreationTime.Date <= endDate.Date);
             }
+
+            int totalCount = await query.CountAsync();
 
             query = query.OrderByDescending(x => x.CreationTime);
             query = query.Page(pageIndex, pageSize);
@@ -476,8 +472,6 @@ namespace Scool.ApplicationServices
                     report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
                 }
             }
-
-            var totalCount = await query.CountAsync();
 
             return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
