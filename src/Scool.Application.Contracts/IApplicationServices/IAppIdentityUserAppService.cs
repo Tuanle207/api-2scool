@@ -11,6 +11,6 @@ namespace Scool.Application.IApplicationServices
 {
     public interface IAppIdentityUserAppService : IIdentityUserAppService
     {
-        Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment();
+        Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment(Guid? classId);
     }
 }

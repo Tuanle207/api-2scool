@@ -160,7 +160,38 @@ namespace Scool.Infrastructure.Helpers
 
         public static bool HasProperty(this Type obj, string propertyName)
         {
-            return !string.IsNullOrEmpty(propertyName) && obj.GetProperty(propertyName) != null;
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return false;
+            }
+            if (obj.GetProperty(propertyName) != null)
+            {
+                return true;
+            }
+            // Nested property
+            if (propertyName.Contains("."))
+            {
+                var nestProperties = propertyName.Split('.');
+
+                // Only support 2 level property
+                if (nestProperties.Count() != 2)
+                {
+                    return false;
+                }
+                var parentProp = obj.GetProperty(nestProperties[0]);
+
+                // Not found parent prop
+                if (parentProp == null)
+                {
+                    return false;
+                }
+
+                var parentType = parentProp.PropertyType;
+                return parentType.HasProperty(nestProperties[1]); 
+                // return childProperty != null;
+            }
+            
+            return false;
         }
     }
 }
