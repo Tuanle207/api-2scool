@@ -31,6 +31,7 @@ namespace Scool.ApplicationServices
         public async Task<PagingModel<RegulationForSimpleListDto>> GetSimpleListAsync()
         {
             var regulations = await _regulationsRepo
+                .Where(x => x.IsActive == true)
                 .Include(x => x.Criteria)
                 .OrderBy(x => x.DisplayName)
                 .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
@@ -53,6 +54,7 @@ namespace Scool.ApplicationServices
             var totalCount = await query.CountAsync();
             
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
+            query = query.Where(x => x.IsActive == true);
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Criteria);
 
@@ -68,10 +70,15 @@ namespace Scool.ApplicationServices
             // Change state of this regulation
             var oldRegulation = await _regulationsRepo.FirstOrDefaultAsync(x => x.Id == id);
             oldRegulation.IsActive = false;
-            await CurrentUnitOfWork.SaveChangesAsync();
 
             // Create new regulation as new updation
-            var result = await CreateAsync(input);
+            var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
+            await _regulationsRepo.InsertAsync(newRegulation);
+            await CurrentUnitOfWork.SaveChangesAsync();
+            
+            var regulation = await _regulationsRepo.Include(e => e.Criteria)
+                .FirstOrDefaultAsync(x => x.Id == newRegulation.Id);
+            var result = ObjectMapper.Map<Regulation, RegulationDto>(regulation);
             return result;
         }
 
@@ -79,8 +86,19 @@ namespace Scool.ApplicationServices
         {
             var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
             await _regulationsRepo.InsertAsync(newRegulation);
+            await CurrentUnitOfWork.SaveChangesAsync();
             
-            var result = ObjectMapper.Map<Regulation, RegulationDto>(newRegulation);
+            var regulation = await _regulationsRepo.Include(e => e.Criteria)
+                .FirstOrDefaultAsync(x => x.Id == newRegulation.Id);
+            var result = ObjectMapper.Map<Regulation, RegulationDto>(regulation);
+            return result;
+        }
+
+        public async override Task<RegulationDto> GetAsync(Guid id)
+        {
+            var regulation = await _regulationsRepo.Include(e => e.Criteria)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            var result = ObjectMapper.Map<Regulation, RegulationDto>(regulation);
             return result;
         }
     }
