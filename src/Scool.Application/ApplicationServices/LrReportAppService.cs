@@ -173,7 +173,7 @@ namespace Scool.ApplicationServices
         }
 
         [Authorize(ReportsPermissions.UpdateLRReport)]
-        public async override Task<LRReportDto> UpdateAsync(Guid id, [FromBody] CreateUpdateLRReportDto input)
+        public async override Task<LRReportDto> UpdateAsync(Guid id, [FromForm] CreateUpdateLRReportDto input)
         {
             var oReport = _leRepo
                 .AsQueryable()
