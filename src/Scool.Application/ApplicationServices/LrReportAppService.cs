@@ -176,10 +176,10 @@ namespace Scool.ApplicationServices
         public async override Task<LRReportDto> UpdateAsync(Guid id, [FromForm] CreateUpdateLRReportDto input)
         {
 
-            var oReport = _leRepo
+            var oReport = await _leRepo
                 .AsQueryable()
                 .Include(x => x.AttachedPhotos)
-                .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             oReport.ClassId = input.ClassId;
             oReport.TotalPoint = input.TotalPoint;
@@ -220,10 +220,10 @@ namespace Scool.ApplicationServices
         [Authorize(ReportsPermissions.RemoveLRReport)]
         public async override Task DeleteAsync(Guid id)
         {
-            var oReport = _leRepo
+            var oReport = await _leRepo
                .AsQueryable()
                .Include(x => x.AttachedPhotos)
-               .FirstOrDefault(x => x.Id == id);
+               .FirstOrDefaultAsync(x => x.Id == id);
 
             if (_currentUser.Id.HasValue && _currentUser.Id.Value != oReport.CreatorId)
             {
@@ -242,6 +242,18 @@ namespace Scool.ApplicationServices
             await _leRepo.DeleteAsync(id);
         }
 
+        public async override Task<LRReportDto> GetAsync(Guid id)
+        {
+             var report = await _leRepo
+                .AsQueryable()
+                .Include(x => x.AttachedPhotos)
+                .Include(x => x.Class)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
+
+            var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
+            
+            return result;
+        }
     }
 }

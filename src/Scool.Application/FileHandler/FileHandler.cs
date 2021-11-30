@@ -44,7 +44,7 @@ namespace Scool.Application.FileHandler
                 }
             }
 
-            var photoUrl = $"{_httpContext.HttpContext.Request.Host.Value}/photo/{fileName}";
+            var photoUrl = $"/photo/{fileName}";
             return photoUrl;
         }
 
@@ -52,7 +52,7 @@ namespace Scool.Application.FileHandler
         {
             var basePath = _env.WebRootPath;
             var decodeUrl = path.Split('/');
-            if (decodeUrl.Length == 3)
+            if (decodeUrl.Length == 2)
             {
                 var fileName = decodeUrl[2];
                 var filePath = Path.Combine(basePath, groupName, fileName);
