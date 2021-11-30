@@ -21,7 +21,7 @@ namespace Scool.Domain.Common
 
         public LessonsRegister()
         {
-            Status = DcpReportStatus.Approved;
+            Status = DcpReportStatus.Created;
             AttachedPhotos = new List<LessonRegisterPhotos>();
         }
     }

@@ -175,27 +175,6 @@ namespace Scool.ApplicationServices
         [Authorize(ReportsPermissions.UpdateLRReport)]
         public async override Task<LRReportDto> UpdateAsync(Guid id, [FromBody] CreateUpdateLRReportDto input)
         {
-            var oReport = _leRepo
-                .AsQueryable()
-                .Include(x => x.AttachedPhotos)
-                .FirstOrDefault(x => x.Id == id);
-
-
-            // delete old photo
-            if (oReport.AttachedPhotos.Count > 0)
-            {
-                var photo = oReport.AttachedPhotos.FirstOrDefault();
-                _fileHandler.RemoveFile(photo.Photo);
-                await _lePhotoRepo.DeleteAsync(photo.Id);
-            }
-
-            // save photo
-            var photoUrl = await _fileHandler.SaveFileAsync(input.Photo);
-            await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
-            {
-                LessonRegisterId = oReport.Id,
-                Photo = photoUrl
-            });
 
             // save LR Report
             var report = await _leRepo.UpdateAsync(new LessonsRegister
@@ -206,10 +185,37 @@ namespace Scool.ApplicationServices
             });
 
             var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
-            result.AttachedPhotos = new List<string>()
+
+            var oReport = _leRepo
+                .AsQueryable()
+                .Include(x => x.AttachedPhotos)
+                .FirstOrDefault(x => x.Id == id);
+
+
+            if (input.Photo != null)
             {
-                photoUrl
-            };
+                // delete old photo
+                if (oReport.AttachedPhotos.Count > 0)
+                {
+                    var photo = oReport.AttachedPhotos.FirstOrDefault();
+                    _fileHandler.RemoveFile(photo.Photo);
+                    await _lePhotoRepo.DeleteAsync(photo.Id);
+                }
+
+                // save photo
+                var photoUrl = await _fileHandler.SaveFileAsync(input.Photo);
+                await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
+                {
+                    LessonRegisterId = oReport.Id,
+                    Photo = photoUrl
+                });
+
+                result.AttachedPhotos = new List<string>()
+                {
+                    photoUrl
+                };
+            }
+            
             return result;
         }
 
