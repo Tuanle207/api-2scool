@@ -176,21 +176,19 @@ namespace Scool.ApplicationServices
         public async override Task<LRReportDto> UpdateAsync(Guid id, [FromForm] CreateUpdateLRReportDto input)
         {
 
-            // save LR Report
-            var report = await _leRepo.UpdateAsync(new LessonsRegister
-            {
-                ClassId = input.ClassId,
-                TotalPoint = input.TotalPoint,
-                AbsenceNo = input.AbsenceNo,
-            });
-
-            var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
-
             var oReport = _leRepo
                 .AsQueryable()
                 .Include(x => x.AttachedPhotos)
                 .FirstOrDefault(x => x.Id == id);
 
+            oReport.ClassId = input.ClassId;
+            oReport.TotalPoint = input.TotalPoint;
+            oReport.AbsenceNo = input.AbsenceNo;
+
+            // save LR Report
+            var report = await _leRepo.UpdateAsync(oReport);
+
+            var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
 
             if (input.Photo != null)
             {
