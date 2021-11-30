@@ -29,6 +29,8 @@ using Volo.Abp.Swashbuckle;
 using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using IdentityServer4.Extensions;
 
 namespace Scool
 {
@@ -238,6 +240,14 @@ namespace Scool
             // {
             //     app.UseMultiTenancy();
             // }
+
+            //  app.Use(async (ctx, next) =>
+            // {
+            //     var configuration = context.GetConfiguration();
+            //     ctx.SetIdentityServerOrigin(configuration["App:IdentityServerOrigin"]);
+            //     await next();
+            // });
+
 
             app.UseUnitOfWork();
             app.UseIdentityServer();
