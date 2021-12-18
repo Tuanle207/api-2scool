@@ -412,13 +412,6 @@ namespace Scool.ApplicationServices
                 .AsNoTracking()
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class);
-                //.Include(e => e.DcpClassReports)
-                //.ThenInclude(e => e.Faults)
-                //.ThenInclude(e => e.RelatedStudents)
-                //.ThenInclude(e => e.Student)
-                //.Include(e => e.DcpClassReports)
-                //.ThenInclude(e => e.Faults)
-                //.ThenInclude(e => e.Regulation);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
