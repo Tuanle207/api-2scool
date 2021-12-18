@@ -398,11 +398,18 @@ namespace Scool.ApplicationServices
                 query = query.Where(e => e.CreationTime.Date <= endDate.Date);
             }
 
+            // Count total count
             int totalCount = await query.CountAsync();
 
+            // Sorting
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
+
+            // Pagination
             query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
             query = query
+                .AsNoTracking()
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
@@ -413,6 +420,7 @@ namespace Scool.ApplicationServices
                 .ThenInclude(e => e.Faults)
                 .ThenInclude(e => e.Regulation);
 
+            // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .ToListAsync();
 
@@ -442,9 +450,15 @@ namespace Scool.ApplicationServices
 
             int totalCount = await query.CountAsync();
 
+            // Sort by time
             query = query.OrderByDescending(x => x.CreationTime);
+
+            // Pagination
             query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
             query = query
+                .AsNoTracking()
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
@@ -455,7 +469,9 @@ namespace Scool.ApplicationServices
                 .ThenInclude(e => e.Faults)
                 .ThenInclude(e => e.Regulation);
 
-            var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
+            // Call query with projection
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
 
             // get creators
             var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
