@@ -41,8 +41,10 @@ namespace Scool.ApplicationServices
 
             var query = _context.DcpClassFaults.FromSqlRaw(@$"
                 SELECT 
-                X.*, 
-                F.Name ClassName, 
+                F.Id ClassId,
+                COALESCE(X.Faults, 0) Faults,
+                COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+                F.Name ClassName,
                 J.Name FormTeacherName 
                 FROM  (
                 SELECT A.Id ClassId,
@@ -53,10 +55,12 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
                 LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
                 LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                WHERE (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0) OR D.Id IS NULL
-                GROUP BY A.ID
-                ) X JOIN [AppClass] F ON F.ID = X.ClassId
+                WHERE (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 
+                AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0)
+                GROUP BY A.Id
+                ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId
+                ORDER BY Faults DESC, PenaltyPoints DESC, ClassName ASC
             ");
 
             var items = await query.ToListAsync();
@@ -70,8 +74,12 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter, false);
 
             var query = _context.CommonDcpFaults.FromSqlRaw(@$"
-                SELECT X.*, Y.DisplayName Name, Z.DisplayName CriteriaName FROM
-                (
+                SELECT 
+                Y.Id, 
+                Y.DisplayName Name, 
+                Z.DisplayName CriteriaName, 
+                X.Faults             
+                FROM (
                 SELECT A.Id, COUNT(B.Id) Faults FROM [AppRegulation] A
                 LEFT JOIN [AppDcpClassReportItem] B ON A.Id = B.RegulationId
                 LEFT JOIN [AppDcpClassReport] C ON B.DcpClassReportId = C.Id
@@ -79,9 +87,10 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppClass] E ON C.ClassId = E.Id
                 WHERE (DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0) OR B.Id IS NULL
                 GROUP BY A.Id
-                ) X JOIN [AppRegulation] Y ON X.Id = Y.Id
+                ) X RIGHT JOIN [AppRegulation] Y ON X.Id = Y.Id
                 JOIN [AppCriteria] Z ON Y.CriteriaId = Z.Id
-                ORDER BY X.Faults DESC
+                WHERE Faults > 0
+                ORDER BY X.Faults DESC, Z.Name ASC
             ");
 
             var items = await query.ToListAsync();
@@ -95,25 +104,29 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter);
 
             var query = _context.DcpClassRankings.FromSqlRaw(@$"
-                SELECT
-                ROW_NUMBER() OVER(ORDER BY X.TotalPoints DESC, X.Faults ASC) as Ranking,
-                X.*, 
+                SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
+                FROM (SELECT 
+                F.Id ClassId,
+                COALESCE(X.Faults, 0) Faults,
+                COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+                COALESCE(X.TotalPoints, {input.StartPoints}) TotalPoints,
                 F.Name ClassName, 
-                J.Name FormTeacherName
+                J.Name FormTeacherName 
                 FROM  (
-                    SELECT A.Id ClassId,
-                    COUNT(D.Id) Faults,
-                    COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
-                    {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
-                    FROM [AppClass] A
-                    LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
-                    LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
-                    LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
-                    LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                    WHERE (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0) OR D.Id IS NULL
-                    GROUP BY A.ID
-                ) X JOIN [AppClass] F ON F.ID = X.ClassId
-                JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId
+                SELECT A.Id ClassId,
+                COUNT(D.Id) Faults,
+                COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
+                {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
+                FROM [AppClass] A
+                LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
+                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
+                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
+                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
+                WHERE (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0) 
+                OR D.Id IS NULL
+                GROUP BY A.ID
+                ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
+                JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId) R
             ");
 
             var items = await query.ToListAsync();
@@ -127,7 +140,11 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter, false);
 
             var query = _context.StudentWithMostFaults.FromSqlRaw(@$"
-                SELECT X.*, Y.Name StudentName, Z.Name ClassName FROM
+                SELECT
+                Y.Id Id,
+                COALESCE(X.Faults, 0) Faults,
+                Y.Name StudentName, 
+                Z.Name ClassName FROM
                 (
                 SELECT A.ID, COUNT(C.Id) Faults 
                 FROM [AppStudent] A
@@ -137,9 +154,10 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpReport] E ON D.DcpReportId = E.Id
                 WHERE (DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0) OR B.Id IS NULL
                 GROUP BY A.Id
-                ) X JOIN [AppStudent] Y ON X.Id = Y.Id
+                ) X RIGHT JOIN [AppStudent] Y ON X.Id = Y.Id
                 JOIN [AppClass] Z ON Y.ClassId = Z.Id
-                ORDER BY Faults DESC
+                WHERE Faults != 0
+                ORDER BY Faults DESC, StudentName ASC
             ");
 
             var items = await query.ToListAsync();
@@ -188,17 +206,18 @@ namespace Scool.ApplicationServices
             var startDate = byWeek && timeFilter.StartTime.DayOfWeek != DayOfWeek.Monday ?
                 timeFilter.StartTime.AddDays(7).StartOfWeek() : timeFilter.StartTime;
             var durations = timeFilter.EndTime - startDate;
-            var days = (int)Math.Ceiling(durations.TotalDays / 7);
-            if (days == 0)
+            var weeks = (int)Math.Ceiling(durations.TotalDays / 7);
+            if (weeks == 0)
             {
-                days = 1;
+                weeks = 1;
             }
 
             return new StatisticsQueryInput
             {
-                StartPoints = days * 100,
+                StartPoints = weeks * 100,
                 StartTime = startDate.ToString("MM/dd/yyyy"),
-                EndTime = timeFilter.EndTime.ToString("MM/dd/yyyy")
+                EndTime = timeFilter.EndTime.ToString("MM/dd/yyyy"),
+                Weeks = weeks
             };
         }
 
@@ -391,5 +410,6 @@ namespace Scool.ApplicationServices
         public int StartPoints { get; set; }
         public string StartTime { get; set; }
         public string EndTime { get; set; }
+        public int Weeks { get; set; }
     }
 }
