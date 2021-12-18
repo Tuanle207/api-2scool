@@ -411,14 +411,14 @@ namespace Scool.ApplicationServices
             query = query
                 .AsNoTracking()
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation);
+                .ThenInclude(e => e.Class);
+                //.Include(e => e.DcpClassReports)
+                //.ThenInclude(e => e.Faults)
+                //.ThenInclude(e => e.RelatedStudents)
+                //.ThenInclude(e => e.Student)
+                //.Include(e => e.DcpClassReports)
+                //.ThenInclude(e => e.Faults)
+                //.ThenInclude(e => e.Regulation);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
@@ -432,8 +432,16 @@ namespace Scool.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
-            var query = _dcpReportsRepo.Filter(input.Filter);
+            var query = _dcpReportsRepo.AsQueryable();
 
+            // Filter by status
+            var statusList = input.Filter.Where(x => x.Key == "Status").Select(x => x.Value).ToList();
+            if (statusList.Count > 0)
+            {
+                query = query.Where(x => statusList.Contains(x.Status));
+            }
+
+            // Filter by start date
             var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
             if (startDateFilter != null)
             {
@@ -441,6 +449,7 @@ namespace Scool.ApplicationServices
                 query = query.Where(e => e.CreationTime.Date >= startDate.Date);
             }
 
+            // Filter by end date
             var endDateFilter = input.Filter.FirstOrDefault(x => x.Key == "EndDate");
             if (endDateFilter != null)
             {
@@ -460,14 +469,7 @@ namespace Scool.ApplicationServices
             query = query
                 .AsNoTracking()
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation);
+                .ThenInclude(e => e.Class);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
