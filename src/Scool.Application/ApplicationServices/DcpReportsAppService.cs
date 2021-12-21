@@ -334,6 +334,90 @@ namespace Scool.ApplicationServices
             return item;
         }
 
+        [Authorize(ReportsPermissions.GetMyDcpReport)]
+        public async Task<PagingModel<DcpReportDto>> PostGetMyReportsAsync(PageInfoRequestDto input)
+        {
+            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
+            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+
+            // Create query with filters
+            var query = _dcpReportsRepo.Filter(input.Filter);
+
+            // Filter by current user
+            var userId = CurrentUser.Id;
+            if (userId == null)
+            {
+                return null;
+            }
+            query = query.Where(x => x.CreatorId == userId);
+
+            // Count total count
+            int totalCount = await query.CountAsync();
+
+            // Sort descending by time
+            query = query.OrderByDescending(x => x.CreationTime);
+
+            // Pagination
+            query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
+            query = query
+                .AsNoTracking()
+                .Include(e => e.DcpClassReports)
+                .ThenInclude(e => e.Class);
+
+            // Call query with projection
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
+
+            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
+        }
+
+        public async Task<PagingModel<DcpReportDto>> PostGetReportsForApprovalAsync(PageInfoRequestDto input)
+        {
+            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
+            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+
+            // Create query with filters
+            var query = _dcpReportsRepo.Filter(input.Filter);
+
+            int totalCount = await query.CountAsync();
+
+            // Sort descending by time
+            query = query.OrderByDescending(x => x.CreationTime);
+
+            // Pagination
+            query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
+            query = query
+                .AsNoTracking()
+                .Include(e => e.DcpClassReports)
+                .ThenInclude(e => e.Class);
+
+            // Call query with projection
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
+
+            // get creators
+            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
+            var creators = await _usersRepo
+                .Where(x => userIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
+                .ToListAsync();
+
+            // attach creator on each item
+            foreach (var report in items)
+            {
+                if (report.CreatorId != null)
+                {
+                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
+                }
+            }
+
+            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
+        }
+
         private async Task CleanDcpReport(Guid id)
         {
             var report = await _dcpReportsRepo
@@ -368,123 +452,6 @@ namespace Scool.ApplicationServices
 
             // force save changes in the middle of current unit of work
             await CurrentUnitOfWork.SaveChangesAsync();
-        }
-
-        [Authorize(ReportsPermissions.GetMyDcpReport)]
-        public async Task<PagingModel<DcpReportDto>> PostGetMyReportsAsync(PageInfoRequestDto input)
-        {
-            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
-            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-
-            var query = _dcpReportsRepo.AsQueryable();
-
-            var userId = CurrentUser.Id;
-            if (userId == null)
-            {
-                return null;
-            }
-            query = query.Where(x => x.CreatorId == userId);
-
-            var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
-            if (startDateFilter != null)
-            {
-                var startDate = DateTime.ParseExact(startDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date >= startDate.Date);
-            }
-            var endDateFilter = input.Filter.FirstOrDefault(x => x.Key == "EndDate");
-            if (endDateFilter != null)
-            {
-                var endDate = DateTime.ParseExact(endDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date <= endDate.Date);
-            }
-
-            // Count total count
-            int totalCount = await query.CountAsync();
-
-            // Sorting
-            query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
-
-            // Pagination
-            query = query.Page(pageIndex, pageSize);
-
-            // Include navigation properties
-            query = query
-                .AsNoTracking()
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class);
-
-            // Call query with projection
-            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
-                .ToListAsync();
-
-            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
-        }
-
-        public async Task<PagingModel<DcpReportDto>> PostGetReportsForApprovalAsync(PageInfoRequestDto input)
-        {
-            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
-            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-
-            var query = _dcpReportsRepo.AsQueryable();
-
-            // Filter by status
-            var statusList = input.Filter.Where(x => x.Key == "Status").Select(x => x.Value).ToList();
-            if (statusList.Count > 0)
-            {
-                query = query.Where(x => statusList.Contains(x.Status));
-            }
-
-            // Filter by start date
-            var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
-            if (startDateFilter != null)
-            {
-                var startDate = DateTime.ParseExact(startDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date >= startDate.Date);
-            }
-
-            // Filter by end date
-            var endDateFilter = input.Filter.FirstOrDefault(x => x.Key == "EndDate");
-            if (endDateFilter != null)
-            {
-                var endDate = DateTime.ParseExact(endDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date <= endDate.Date);
-            }
-
-            int totalCount = await query.CountAsync();
-
-            // Sort by time
-            query = query.OrderByDescending(x => x.CreationTime);
-
-            // Pagination
-            query = query.Page(pageIndex, pageSize);
-
-            // Include navigation properties
-            query = query
-                .AsNoTracking()
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class);
-
-            // Call query with projection
-            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
-                .ToListAsync();
-
-            // get creators
-            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
-            var creators = await _usersRepo
-                .Where(x => userIds.Contains(x.Id))
-                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                .ToListAsync();
-
-            // attach creator on each item
-            foreach (var report in items)
-            {
-                if (report.CreatorId != null)
-                {
-                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
-                }
-            }
-
-            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
     }
 }

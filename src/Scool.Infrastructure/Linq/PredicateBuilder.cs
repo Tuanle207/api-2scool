@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -82,10 +83,19 @@ namespace Scool.Infrastructure.Linq
                 }
                 else
                 {
-                    var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
-                    typedValue = valueType.IsEnum ? Enum.Parse(valueType, value) :
-                        valueType == typeof(Guid) ? Guid.Parse(value) :
-                        Convert.ChangeType(value, valueType);
+                    try
+                    {
+                        var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
+                        typedValue = valueType.IsEnum ? Enum.Parse(valueType, value) :
+                            valueType == typeof(Guid) ? Guid.Parse(value) :
+                            valueType == typeof(DateTime) ? DateTime.ParseExact(value, "MM/dd/yyyy", CultureInfo.InvariantCulture) :
+                            Convert.ChangeType(value, valueType);
+                    }
+                    catch (Exception ex)
+                    {
+                        var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
+                        typedValue = Convert.ChangeType(value, valueType);
+                    }
                 }
             }
             var right = Expression.Constant(typedValue, left.Type);
