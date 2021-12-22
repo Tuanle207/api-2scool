@@ -262,6 +262,7 @@ namespace Scool.ApplicationServices
             return item;
         }
 
+        [Obsolete]
         [Authorize(ReportsPermissions.GetDcpReportApprovalHistory)]
         public async override Task<PagingModel<DcpReportDto>> PostPagingAsync(PageInfoRequestDto input)
         {
@@ -345,11 +346,11 @@ namespace Scool.ApplicationServices
 
             // Filter by current user
             var userId = CurrentUser.Id;
-            if (userId == null)
+            if (!userId.HasValue)
             {
                 return null;
             }
-            query = query.Where(x => x.CreatorId == userId);
+            query = query.Where(x => x.CreatorId == userId.Value);
 
             // Count total count
             int totalCount = await query.CountAsync();
@@ -373,6 +374,7 @@ namespace Scool.ApplicationServices
             return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
 
+        [Authorize(ReportsPermissions.GetDcpReportApprovalHistory)]
         public async Task<PagingModel<DcpReportDto>> PostGetReportsForApprovalAsync(PageInfoRequestDto input)
         {
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;

@@ -12,6 +12,7 @@ using Scool.Domain.Common;
 using Scool.Infrastructure.ApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
+using Scool.Users;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +36,7 @@ namespace Scool.ApplicationServices
     {
         private readonly IRepository<LessonsRegister, Guid> _leRepo;
         private readonly IRepository<LessonRegisterPhotos, Guid> _lePhotoRepo;
+        private readonly IRepository<AppUser, Guid> _usersRepo;
         private readonly ICurrentUser _currentUser;
         private readonly IFileHandler _fileHandler;
         private readonly IGuidGenerator _guidGenerator;
@@ -44,14 +46,15 @@ namespace Scool.ApplicationServices
             IRepository<LessonRegisterPhotos, Guid> lePhotoRepo,
             ICurrentUser currentUser,
             IFileHandler fileHandler,
-            IGuidGenerator guidGenerator 
-            ) : base(leRepo)
+            IGuidGenerator guidGenerator
+, IRepository<AppUser, Guid> usersRepo) : base(leRepo)
         {
             _leRepo = leRepo;
             _lePhotoRepo = lePhotoRepo;
             _currentUser = currentUser;
             _fileHandler = fileHandler;
             _guidGenerator = guidGenerator;
+            _usersRepo = usersRepo;
         }
 
         [Authorize(ReportsPermissions.CreateNewLRReport)]
@@ -125,51 +128,73 @@ namespace Scool.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
-            var query = _leRepo.AsQueryable();
-
-            var statusList = input.Filter.Where(x => x.Key == "Status").Select(x => x.Value).ToList();
-            if (statusList.Count > 0)
-            {
-                query = query.Where(x => statusList.Contains(x.Status));
-            }
-
+            var query = _leRepo.Filter(input.Filter);
 
             var totalCount = await query.CountAsync();
 
-            query = query
-                 .OrderByDescending(x => x.CreationTime)
-                 .Page(pageIndex, pageSize)
-                 .Include(x => x.AttachedPhotos)
-                 .Include(x => x.Class);
+            query = query.OrderByDescending(x => x.CreationTime);
 
-            var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x)).ToListAsync();
+            query = query.Page(pageIndex, pageSize);
 
+            query = query.AsNoTracking()
+                .Include(x => x.AttachedPhotos)
+                .Include(x => x.Class);
 
-            return new PagingModel<LRReportDto>(items, totalCount);
+            var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x))
+                .ToListAsync();
+
+            // get creators
+            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
+            var creators = await _usersRepo
+                .Where(x => userIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
+                .ToListAsync();
+
+            // attach creator on each item
+            foreach (var report in items)
+            {
+                if (report.CreatorId != null)
+                {
+                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
+                }
+            }
+
+            return new PagingModel<LRReportDto>(items, totalCount, pageIndex, pageSize);
         }
 
         [Authorize(ReportsPermissions.GetMyLRReport)]
         public async Task<PagingModel<LRReportDto>> PostGetMyReportsAsync(PageInfoRequestDto input)
         {
-            var userId = _currentUser.Id;
+            
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
-            var query = _leRepo.AsQueryable()
-                .WhereIf(userId.HasValue, x => x.CreatorId == userId.Value);
+            var query = _leRepo.Filter(input.Filter);
+
+            var userId = _currentUser.Id;
+            if (!userId.HasValue)
+            {
+                return null;
+            }
+
+            query = query.Where(x => x.CreatorId == userId.Value);
 
             var totalCount = await query.CountAsync();
 
+            query = query.OrderByDescending(x => x.CreationTime);
+
+            query = query.Page(pageIndex, pageSize);
+
             query = query
-                 .OrderByDescending(x => x.CreationTime)
-                 .Page(pageIndex, pageSize)
-                 .Include(x => x.AttachedPhotos)
-                 .Include(x => x.Class);
+                .AsNoTracking()
+                .Include(x => x.AttachedPhotos)
+                .Include(x => x.Class);
 
-            var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x)).ToListAsync();
+            var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x))
+                .ToListAsync();
 
 
-            return new PagingModel<LRReportDto>(items, totalCount);
+            return new PagingModel<LRReportDto>(items, totalCount, pageIndex, pageSize);
         }
 
         [Authorize(ReportsPermissions.UpdateLRReport)]
