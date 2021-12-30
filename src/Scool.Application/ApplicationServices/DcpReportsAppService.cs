@@ -5,6 +5,7 @@ using Scool.Application.Dtos;
 using Scool.Application.IApplicationServices;
 using Scool.Application.Permissions;
 using Scool.Domain.Common;
+using Scool.Domain.Shared.AppConsts;
 using Scool.Infrastructure.ApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
@@ -66,11 +67,11 @@ namespace Scool.ApplicationServices
             var report = new DcpReport(_guidGenerator.Create());
 
             // report on each class
-            var clsReports = input.DcpClassReports;
+            IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                var penalty = 0;
+                int penalty = 0;
 
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
@@ -79,20 +80,21 @@ namespace Scool.ApplicationServices
                 // regulations broken
                 foreach (var reg in faults)
                 {
+                    IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
-                    // calc pelnaty
-                    var point = await _regulationsRepo
+                    // accumulate penalty
+                    Regulation regulation = await _regulationsRepo
                         .Where(x => x.Id == reg.RegulationId)
-                        .Select(x => x.Point)
                         .FirstOrDefaultAsync();
-                    penalty += point;
+                    int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
+                    penalty += regulation.Point * mutiply;
 
                     // student breaking the regulations
-                    var studentIds = reg.RelatedStudentIds;
-                    var students = await _studentsRepo.Where(x => studentIds.Contains(x.Id)).ToListAsync();
+                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
+                        .ToListAsync();
 
                     foreach (var stdnt in students)
                     {
@@ -132,15 +134,15 @@ namespace Scool.ApplicationServices
 
             await CleanDcpReport(id);
 
-            // replace with nkew report with the same ID (like the way we are doing HTTP PUT)
+            // replace with new report with the same ID (like the way we are doing HTTP PUT)
             var report = new DcpReport(id);
 
             // report on each class
-            var clsReports = input.DcpClassReports;
+            IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                var penalty = 0;
+                int penalty = 0;
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
 
@@ -148,20 +150,21 @@ namespace Scool.ApplicationServices
                 // regulations broken
                 foreach (var reg in faults)
                 {
+                    IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
-                    // calc pelnaty
-                    var point = await _regulationsRepo
+                    // accumulate penalty
+                    Regulation regulation = await _regulationsRepo
                         .Where(x => x.Id == reg.RegulationId)
-                        .Select(x => x.Point)
                         .FirstOrDefaultAsync();
-                    penalty += point;
+                    int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
+                    penalty += regulation.Point * mutiply;
 
                     // student breaking the regulations
-                    var studentIds = reg.RelatedStudentIds;
-                    var students = await _studentsRepo.Where(x => studentIds.Contains(x.Id)).ToListAsync();
+                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
+                        .ToListAsync();
 
                     foreach (var stdnt in students)
                     {

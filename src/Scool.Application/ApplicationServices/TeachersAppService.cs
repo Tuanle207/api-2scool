@@ -31,7 +31,6 @@ namespace Scool.Application.ApplicationServices
         {
             var items = await _teachersRepo
                 .Include(x => x.FormClass)
-                .Where(x => x.FormClass == null)
                 .Select(x => ObjectMapper.Map<Teacher, TeacherForSimpleListDto>(x))
                 .ToListAsync();
             return items;

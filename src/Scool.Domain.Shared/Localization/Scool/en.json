@@ -20,7 +20,6 @@
     "Permission:Dcp:DcpReports.GetMyDcpReport": "Get my created reports",
     "Permission:Dcp:DcpReports.RemoveDcpReport": "Remove reports",
     "Permission:Dcp:DcpReports.GetDcpReportDetail": "Get Report detail",
-    "Permission:Dcp:DcpReports.GetDcpReportDetailApproval": "Get Report detail for approval",
     "Permission:Dcp:DcpReports.UpdateDcpReport": "Update Reports",
 
     "Permission:Dcp:LRReports": "Lesson Registration Reports",
@@ -30,10 +29,7 @@
     "Permission:Dcp:LRReports.GetMyLRReport": "Get my created reports",
     "Permission:Dcp:LRReports.RemoveLRReport": "Remove reports",
     "Permission:Dcp:LRReports.GetLRReportDetail": "Get Report detail",
-    "Permission:Dcp:LRReports.GetLRReportDetailApproval": "Get Report detail for approval",
     "Permission:Dcp:LRReports.UpdateLRReport": "Update Reports",
-
-
 
     "Permission:Stats": "Statistics Reports Management",
     "Permission:Stats:Rankings": "Get rankings report",
@@ -44,7 +40,6 @@
     "Permission:TaskAssignment:AssignLessonRegisterReport": "Assign lesson registration report schedule",
     "Permission:TaskAssignment:GetScheduleList": "Get assgined schedule list",
     "Permission:TaskAssignment:GetMyAssignedSchedule": "Get my assigned schedule"
-
 
   }
 }

@@ -50,14 +50,16 @@ namespace Scool.ApplicationServices
         {
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+            
             var query = _regulationsRepo.Filter(input.Filter);
+            
+            query = query.Where(x => x.IsActive == true);
+
             var totalCount = await query.CountAsync();
             
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
-            query = query.Where(x => x.IsActive == true);
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Criteria);
-
 
             var items = await query.Select(x => ObjectMapper.Map<Regulation, RegulationDto>(x))
                 .ToListAsync();

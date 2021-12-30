@@ -41,9 +41,6 @@ namespace Scool.Application.Permissions
             dcpReportPermission.AddChild(ReportsPermissions.GetDcpReportDetail,
                 L(prefix + ReportsPermissions.GetDcpReportDetail));
 
-            dcpReportPermission.AddChild(ReportsPermissions.GetDcpReportDetailApproval,
-                L(prefix + ReportsPermissions.GetDcpReportDetailApproval));
-
             dcpReportPermission.AddChild(ReportsPermissions.UpdateDcpReport,
                 L(prefix + ReportsPermissions.UpdateDcpReport));
 
@@ -69,9 +66,6 @@ namespace Scool.Application.Permissions
             lrReportPermission.AddChild(ReportsPermissions.GetLRReportDetail,
                 L(prefix + ReportsPermissions.GetLRReportDetail));
 
-            lrReportPermission.AddChild(ReportsPermissions.GetLRReportDetailApproval,
-                L(prefix + ReportsPermissions.GetLRReportDetailApproval));
-
             lrReportPermission.AddChild(ReportsPermissions.UpdateLRReport,
                 L(prefix + ReportsPermissions.UpdateLRReport));
         }
@@ -92,7 +86,6 @@ namespace Scool.Application.Permissions
         public const string GetMyDcpReport = DcpReportPermission + ".GetMyDcpReport";
         public const string RemoveDcpReport = DcpReportPermission + ".RemoveDcpReport";
         public const string GetDcpReportDetail = DcpReportPermission + ".GetDcpReportDetail";
-        public const string GetDcpReportDetailApproval = DcpReportPermission + ".GetDcpReportDetailApproval";
         public const string UpdateDcpReport = DcpReportPermission + ".UpdateDcpReport";
 
         // Lession Registration Report
@@ -103,7 +96,6 @@ namespace Scool.Application.Permissions
         public const string GetMyLRReport = LRReportsPermission + ".GetMyLRReport";
         public const string RemoveLRReport = LRReportsPermission + ".RemoveLRReport";
         public const string GetLRReportDetail = LRReportsPermission + ".GetLRReportDetail";
-        public const string GetLRReportDetailApproval = LRReportsPermission + ".GetLRReportDetailApproval";
         public const string UpdateLRReport = LRReportsPermission + ".UpdateLRReport";
 
     }

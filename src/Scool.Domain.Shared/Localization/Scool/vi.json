@@ -12,16 +12,33 @@
     "Permission:Courses:Courses.Get": "Xem thông tin chi tiết khóa học",
     "Permission:Courses:Courses.GetAll": "Xem danh sách khóa học",
 
-    "Permission:Dcp": "Quản Lý Nề Nếp",
+    "Permission:Dcp": "Quản lý nề nếp",
     "Permission:Dcp:DcpReports": "Quản lý chấm điểm nề nếp",
-    "Permission:Dcp:DcpReports.Create": "Tạo phiếu chấm điểm",
-    "Permission:Dcp:DcpReports.Update": "Cập nhập phiếu chấm điểm",
-    "Permission:Dcp:DcpReports.Delete": "Xóa phiếu chấm điểm",
-    "Permission:Dcp:DcpReports.Get": "Xem thông tin phiếu chấm điểm",
-    "Permission:Dcp:DcpReports.GetAll": "Xem danh sách phiếu chấm điểm",
-    "Permission:Dcp:DcpReports.AcceptReject": "Duyệt phiếu chấm điểm",
+    "Permission:Dcp:DcpReports.CreateNewDcpReport": "Tạo phiếu chấm điểm",
+    "Permission:Dcp:DcpReports.GetDcpReportApprovalHistory": "Xem danh sách duyệt chấm nề nếp",
+    "Permission:Dcp:DcpReports.DcpReportApproval": "Kiểm duyệt phiếu chấm nề nếp",
+    "Permission:Dcp:DcpReports.GetMyDcpReport": "Xem thông tin phiếu chấm nề nếp của tôi",
+    "Permission:Dcp:DcpReports.RemoveDcpReport": "Xóa phiếu chấm nề nếp",
+    "Permission:Dcp:DcpReports.GetDcpReportDetail": "Xem thông tin phiếu chấm nề nếp",
+    "Permission:Dcp:DcpReports.UpdateDcpReport": "Cập nhập phiếu chấm nề nếp",
+
+    "Permission:Dcp:LRReports": "Quản lý chấm sổ đầu bài",
+    "Permission:Dcp:LRReports.CreateNewLRReport": "Tạo phiếu nộp sổ đầu bài",
+    "Permission:Dcp:LRReports.GetLRApprovalHistory": "Xem danh sách kiểm duyệt sổ đầu bài",
+    "Permission:Dcp:LRReports.LRReportApproval": "Kiểm duyệt phiếu nộp sổ đầu bài",
+    "Permission:Dcp:LRReports.GetMyLRReport": "Xem danh sách phiếu nộp sổ đầu bài đã tạo",
+    "Permission:Dcp:LRReports.RemoveLRReport": "Xóa phiếu nộp sổ đầu bài",
+    "Permission:Dcp:LRReports.GetLRReportDetail": "Xem thông tin phiếu nộp sổ đầu bài",
+    "Permission:Dcp:LRReports.UpdateLRReport": "Cập nhật phiếu nộp sổ đầu bài",
+
     "Permission:Stats": "Quản Lý Báo Cáo Thống Kê",
-    "Permission:Stats:Reports": "Báo Cáo Thống Kê",
-    "Permission:Stats:Reports.Get": "Xem báo cáo thống kê"
+    "Permission:Stats:Rankings": "Xếp hạng thi đua",
+    "Permission:Stats:Statistics": "Thống kê nề nếp",
+
+    "Permission:TaskAssignment": "Phân công",
+    "Permission:TaskAssignment:AssignDcpReport": "Phân công chấm điểm nề nếp",
+    "Permission:TaskAssignment:AssignLessonRegisterReport": "Phân công nộp sổ đầu bài",
+    "Permission:TaskAssignment:GetScheduleList": "Xem phân công lịch trực",
+    "Permission:TaskAssignment:GetMyAssignedSchedule": "Xem phân công lịch trực của tôi"
   }
 }
