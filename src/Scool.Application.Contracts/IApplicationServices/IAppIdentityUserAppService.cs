@@ -1,4 +1,5 @@
 ﻿using Scool.Application.Dtos;
+using Scool.Dtos;
 using Scool.Infrastructure.Common;
 using System;
 using System.Collections.Generic;
@@ -12,5 +13,7 @@ namespace Scool.Application.IApplicationServices
     public interface IAppIdentityUserAppService : IIdentityUserAppService
     {
         Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment(Guid? classId);
+
+        Task<PagingModel<UserDto>> PostPaging(PageInfoRequestDto input);
     }
 }

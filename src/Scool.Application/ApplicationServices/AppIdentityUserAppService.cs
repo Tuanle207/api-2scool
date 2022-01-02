@@ -17,6 +17,11 @@ using Scool.Infrastructure.Common;
 using Scool.Application.Dtos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Scool.Users;
+using Scool.Infrastructure.Linq;
+using Scool.Dtos;
+using IdentityRole = Volo.Abp.Identity.IdentityRole;
+using IdentityUser = Volo.Abp.Identity.IdentityUser;
 
 namespace Scool.ApplicationServices
 {
@@ -24,14 +29,24 @@ namespace Scool.ApplicationServices
     [ExposeServices(typeof(IIdentityUserAppService), typeof(IdentityUserAppService), typeof(AppIdentityUserAppService))]
     public class AppIdentityUserAppService : IdentityUserAppService, IAppIdentityUserAppService
     {
+        private readonly IdentityUserManager _identityUserManager;
+        private readonly IIdentityUserRepository _identityUserRepository;
+        private readonly IIdentityRoleRepository _identityRoleRepository;
         private readonly IRepository<UserProfile, Guid> _userProfilesRepository;
+        private readonly IRepository<AppUser, Guid> _userRepository;
+        private readonly IOptions<IdentityOptions> _identityOptions;
 
-        public AppIdentityUserAppService(IdentityUserManager userManager, IIdentityUserRepository userRepository,
-            IIdentityRoleRepository roleRepository, IOptions<IdentityOptions> identityOptions,
-                IRepository<UserProfile, Guid> userProfilesRepository)
-                : base(userManager, userRepository, roleRepository, identityOptions)
+        public AppIdentityUserAppService(IdentityUserManager identityUserManager, IIdentityUserRepository identityUserRepository,
+            IIdentityRoleRepository identityRoleRepository, IOptions<IdentityOptions> identityOptions,
+                IRepository<UserProfile, Guid> userProfilesRepository, IRepository<AppUser, Guid> userRepository)
+                : base(identityUserManager, identityUserRepository, identityRoleRepository, identityOptions)
         {
+            _identityUserManager = identityUserManager;
+            _identityUserRepository = identityUserRepository;
+            _identityRoleRepository = identityRoleRepository;
+            _identityOptions = identityOptions;
             _userProfilesRepository = userProfilesRepository;
+            _userRepository = userRepository;
         }
 
         public async override Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
@@ -71,6 +86,48 @@ namespace Scool.ApplicationServices
                 .Select(x => ObjectMapper.Map<UserProfile, UserForTaskAssignmentDto>(x)).ToListAsync();
 
             return new PagingModel<UserForTaskAssignmentDto>(items, items.Count);
+        }
+
+        public async Task<PagingModel<UserDto>> PostPaging(PageInfoRequestDto input)
+        {
+            int pageSize = input.PageSize > 0 ? input.PageSize : 10;
+            int pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+
+            IQueryable<AppUser> query = _userRepository.AsNoTracking()
+                .Filter(input.Filter);
+
+            int totalCount = await query.CountAsync();
+
+            // Users
+            IList<UserDto> users = await _identityUserRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .OrderByDescending(x => x.CreationTime)
+                .Page(pageIndex, pageSize)
+                .Include(x => x.Roles)
+                .Select(x => ObjectMapper.Map<IdentityUser, UserDto>(x))
+                .ToListAsync();
+
+            var listRoleId = users.Where(x => x.RoleId.HasValue)
+                .Select(x => x.RoleId.Value)
+                .ToList();
+
+            // User roles
+            IList<RoleForSimpleListDto> roles = await _identityRoleRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Where(x => listRoleId.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<IdentityRole, RoleForSimpleListDto>(x))
+                .ToListAsync();
+
+            foreach (UserDto user in users)
+            {
+                RoleForSimpleListDto role = user.RoleId.HasValue 
+                    ? roles.FirstOrDefault(x => x.Id == user.RoleId)
+                    : null;
+
+                user.Role = role;
+            }
+
+            return new PagingModel<UserDto>(users, totalCount, pageIndex, pageSize);
         }
     }
 }

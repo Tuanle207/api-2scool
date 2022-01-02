@@ -29,17 +29,19 @@ namespace Scool.Application.ApplicationServices
         private readonly IRepository<TaskAssignment, Guid> _taskAssignmentRepo;
         private readonly IRepository<AppUser, Guid> _usersRepo;
         private readonly IRepository<UserProfile, Guid> _userProfilesRepo;
+        private readonly IRepository<Class, Guid> _classesRepo;
 
         public TaskAssigmentAppService(IRepository<TaskAssignment, Guid> taskAssignmentRepo,
             IRepository<UserProfile, Guid> userProfilesRepo,
-            IRepository<AppUser, Guid> usersRepo)
+            IRepository<AppUser, Guid> usersRepo, IRepository<Class, Guid> classesRepo)
             : base(taskAssignmentRepo)
         {
             _taskAssignmentRepo = taskAssignmentRepo;
             _userProfilesRepo = userProfilesRepo;
             _usersRepo = usersRepo;
+            _classesRepo = classesRepo;
         }
-        
+
         [Authorize(TaskAssignmentPermissions.AssignDcpReport)]
         [HttpPost("api/app/task-assigment/create-update-schedule")]
         public async Task CreateUpdateAsync(CreateUpdateTaskAssignmentDto input)
@@ -80,6 +82,7 @@ namespace Scool.Application.ApplicationServices
                      .Include(x => x.ClassAssigned)
                      .Include(x => x.AssigneeProfile)
                      .ThenInclude(y => y.Class)
+                     .OrderBy(x => x.ClassAssigned.Name)
                      .Select(x => ObjectMapper.Map<TaskAssignment, TaskAssignmentDto>(x));
 
             var items = await query.ToListAsync();
@@ -117,6 +120,23 @@ namespace Scool.Application.ApplicationServices
         public async Task<PagingModel<ClassForSimpleListDto>> GetAssignedClassesForDcpReportAsync([FromQuery] string taskType)
         {
             var emptyRes = new PagingModel<ClassForSimpleListDto>(new List<ClassForSimpleListDto>(), 0);
+
+            if (!CurrentUser.IsAuthenticated)
+            {
+                return emptyRes;
+            }
+
+            var roles = CurrentUser.Roles;
+            if (roles.Contains(AppRole.DcpManager) || roles.Contains(AppRole.Admin))
+            {
+                var classItems = await _classesRepo.AsNoTracking()
+                    .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
+                    .ToListAsync();
+
+                return new PagingModel<ClassForSimpleListDto>(classItems, 0);
+
+            }
+
             if (CurrentUser.Id != null)
             {
                 var profile = await _userProfilesRepo.Where(x => x.UserId == CurrentUser.Id).FirstOrDefaultAsync();
