@@ -27,6 +27,15 @@ namespace Scool.Controllers
             return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
+        [HttpGet("downloads/overall-ranking-excel")]
+        public async Task<IActionResult> GetOverallRankingExcel([FromQuery] TimeFilterDto timeFilter)
+        {
+            var memoryStream = await _statisticsAppService.GetOverallRankingExcel(timeFilter);
+            memoryStream.Position = 0;
+            var fileName = $"bap-cao-xep-hang-thi-dua-{DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss")}.xlsx";
+            return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
         [HttpGet("downloads/dcp-ranking-excel")]
         public async Task<IActionResult> GetDcpRankingExcel([FromQuery] TimeFilterDto timeFilter)
         {

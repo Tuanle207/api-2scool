@@ -35,6 +35,11 @@ namespace Scool.EntityFrameworkCore
                 b.HasNoKey();
                 b.ToView(nameof(StudentWithMostFaults), ScoolConsts.DbSchema);
             });
+            builder.Entity<OverallClassRanking>(b =>
+            {
+                b.HasNoKey();
+                b.ToView(nameof(OverallClassRanking), ScoolConsts.DbSchema);
+            });
 
             /* Configure your own tables/entities inside here */
 
