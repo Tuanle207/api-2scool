@@ -41,6 +41,7 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter);
 
             var query = _context.DcpClassFaults.FromSqlRaw(@$"
+                SET ARITHABORT ON;
                 SELECT 
                 F.Id ClassId,
                 COALESCE(X.Faults, 0) Faults,
@@ -62,7 +63,8 @@ namespace Scool.ApplicationServices
                 GROUP BY A.Id
                 ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId
-                ORDER BY Faults DESC, PenaltyPoints DESC, ClassName ASC
+                ORDER BY Faults DESC, PenaltyPoints DESC, ClassName ASC;
+                SET ARITHABORT OFF;
             ");
 
             var items = await query.ToListAsync();
@@ -76,6 +78,7 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter, false);
 
             var query = _context.CommonDcpFaults.FromSqlRaw(@$"
+                SET ARITHABORT ON;
                 SELECT 
                 Y.Id, 
                 Y.DisplayName Name, 
@@ -95,7 +98,8 @@ namespace Scool.ApplicationServices
                 ) X RIGHT JOIN [AppRegulation] Y ON X.Id = Y.Id
                 JOIN [AppCriteria] Z ON Y.CriteriaId = Z.Id
                 WHERE Faults > 0
-                ORDER BY X.Faults DESC, Z.Name ASC
+                ORDER BY X.Faults DESC, Z.Name ASC;
+                SET ARITHABORT OFF;
             ");
 
             var items = await query.ToListAsync();
@@ -112,27 +116,28 @@ namespace Scool.ApplicationServices
             const int DCPRatio = 1;
             const int TotalRatio = LRRatio + DCPRatio;
 
-            var query = _context.OverallClassRanking.FromSqlRaw(@$"
+            var queryString = @$"
+                SET ARITHABORT ON;
                 WITH LR AS
                 (
 	                SELECT 
 	                B.Id ClassId, 
-	                COALESCE(X.LRPoints, 0) LRPoints,
+	                COALESCE(X.LrPoints, 0) LrPoints,
 	                COALESCE(X.TotalAbsence, 0) TotalAbsence
 	                FROM (
 	                SELECT 
 	                A.ClassId ClassId,
-	                SUM(A.TotalPoint) LRPoints,
+	                SUM(A.TotalPoint) LrPoints,
 	                SUM(A.AbsenceNo) TotalAbsence
 	                FROM [AppLessonsRegister] A
-	                WHERE (A.Status = '{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', A.CreationTime) >= 0 
+	                WHERE (A.Status = N'{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', A.CreationTime) >= 0 
                     AND DATEDIFF(DAY, A.CreationTime, '{input.EndTime}') >= 0))
 	                GROUP BY A.ClassId
 	                ) X RIGHT JOIN [AppClass] B ON B.Id = X.ClassId
                 )
                 SELECT RANK() OVER (
 	                ORDER BY R.RankingPoints DESC, 
-	                R.LRPoints DESC, 
+	                R.LrPoints DESC, 
 	                R.TotalAbsence ASC, 
 	                R.Faults ASC) Ranking,
 	                R.*
@@ -144,9 +149,9 @@ namespace Scool.ApplicationServices
 	                LR.TotalAbsence,
 	                DCP.Faults,
 	                DCP.PenaltyPoints,
-	                LR.LRPoints,
+	                LR.LrPoints,
 	                DCP.DcpPoints,
-	                CONVERT(int, ROUND((LR.LRPoints * {LRRatio} + DCP.DcpPoints * {DCPRatio}) / {TotalRatio}, 0)) RankingPoints
+	                CONVERT(int, ROUND((LR.LrPoints * {LRRatio} + DCP.DcpPoints * {DCPRatio}) / {TotalRatio}, 0)) RankingPoints
 	                FROM
 	                (
 	                SELECT 
@@ -164,7 +169,7 @@ namespace Scool.ApplicationServices
 		                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
 		                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
 		                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-		                WHERE (C.Status = '{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 
+		                WHERE (C.Status = N'{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 
                         AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0))
 		                GROUP BY A.ID
 	                ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId
@@ -172,8 +177,12 @@ namespace Scool.ApplicationServices
 	                JOIN LR ON DCP.ClassId = LR.ClassId 
 	                JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
 	                JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
-                ) R
-            ").AsNoTracking();
+                ) R;
+                SET ARITHABORT OFF;
+            ";
+
+            var query = _context.OverallClassRanking.FromSqlRaw(queryString)
+                .AsNoTracking();
 
             var items = await query.ToListAsync();
 
@@ -186,6 +195,7 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter);
 
             var query = _context.DcpClassRankings.FromSqlRaw(@$"
+                SET ARITHABORT ON;
                 SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
                 FROM (SELECT 
                 F.Id ClassId,
@@ -211,6 +221,7 @@ namespace Scool.ApplicationServices
                 GROUP BY A.ID
                 ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId) R
+                SET ARITHABORT OFF;
             ");
 
             var items = await query.ToListAsync();
@@ -224,6 +235,7 @@ namespace Scool.ApplicationServices
             var input = ParseQueryInput(timeFilter, false);
 
             var query = _context.StudentWithMostFaults.FromSqlRaw(@$"
+                SET ARITHABORT ON;
                 SELECT
                 Y.Id Id,
                 COALESCE(X.Faults, 0) Faults,
@@ -245,6 +257,7 @@ namespace Scool.ApplicationServices
                 JOIN [AppClass] Z ON Y.ClassId = Z.Id
                 WHERE Faults != 0
                 ORDER BY Faults DESC, StudentName ASC
+                SET ARITHABORT OFF;
             ");
 
             var items = await query.ToListAsync();
