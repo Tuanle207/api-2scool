@@ -118,7 +118,6 @@ namespace Scool.ApplicationServices
             const int TotalRatio = LRRatio + DCPRatio;
 
             var queryString = @$"
-                SET ARITHABORT ON;
                 WITH LR AS
                 (
 	                SELECT 
@@ -179,8 +178,7 @@ namespace Scool.ApplicationServices
 	                JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
 	                JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
                 ) R;
-                SET ARITHABORT OFF;
-            ";
+                ";
 
             var query = _context.OverallClassRanking.FromSqlRaw(queryString)
                 .AsNoTracking();
@@ -320,7 +318,7 @@ namespace Scool.ApplicationServices
 
             IList<DcpReport> reports = await _dcpReportsRepo.AsNoTracking()
                 .Where(x => x.Status == DcpReportStatus.Approved)
-                .Where(x => x.CreationTime >= timeFilter.StartTime && x.CreationTime < timeFilter.EndTime)
+                .Where(x => x.CreationTime >= timeFilter.StartTime && x.CreationTime <= timeFilter.EndTime)
                 .Include(x => x.DcpClassReports)
                 .ThenInclude(x => x.Faults)
                 .ToListAsync();
