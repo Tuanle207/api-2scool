@@ -7,6 +7,7 @@ using Scool.Application.IApplicationServices;
 using Scool.Application.Permissions;
 using Scool.Domain.Common;
 using Scool.Domain.Views;
+using Scool.Dtos;
 using Scool.EntityFrameworkCore;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Extensions;
@@ -308,6 +309,66 @@ namespace Scool.ApplicationServices
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
             return outputStream;
+        }
+
+        public async Task<LineChartStatDto> GetStatForLineChart(TimeFilterDto timeFilter)
+        {
+            var result = new LineChartStatDto
+            {
+                items = new Dictionary<string, List<LineChartStat>>()
+            };
+
+            IList<DcpReport> reports = await _dcpReportsRepo.AsNoTracking()
+                .Where(x => x.Status == DcpReportStatus.Approved)
+                .Where(x => x.CreationTime >= timeFilter.StartTime && x.CreationTime < timeFilter.EndTime)
+                .Include(x => x.DcpClassReports)
+                .ThenInclude(x => x.Faults)
+                .ToListAsync();
+
+            var dayofWeeks = new Dictionary<int, string>
+            {
+                { 0, "T2" },
+                { 1, "T3" },
+                { 2, "T4" },
+                { 3, "T5" },
+                { 4, "T6" },
+                { 5, "T7" },
+                { 6, "CN" },
+            };
+
+            for (int dayofWeek = 0; dayofWeek < 6; dayofWeek++) // 0 = monday, 1 = tuesday, ...
+            {
+                var stats = new List<LineChartStat>();
+                DateTime currentDate = timeFilter.StartTime.Date.AddDays(dayofWeek);
+                DateTime nextDate = currentDate.AddDays(1);
+                IList<DcpClassReport> classReports = reports
+                    .Where(x => x.CreationTime >= currentDate && x.CreationTime < nextDate)
+                    .SelectMany(x => x.DcpClassReports)
+                    .ToList();
+
+                IList<Guid> listClassId = classReports.Select(x => x.ClassId)
+                    .Distinct()
+                    .ToList();
+
+                foreach (Guid classId in listClassId)
+                {
+                    IEnumerable<DcpClassReport> currentClassReports = classReports.Where(x => x.ClassId == classId);
+
+                    int penaltyPoints = currentClassReports.Sum(x => x.PenaltyTotal);
+                    int faults = currentClassReports.SelectMany(x => x.Faults).Count();
+                    stats.Add(new LineChartStat
+                    {
+                        ClassId = classId,
+                        Faults = faults,
+                        PenaltyPoint = penaltyPoints
+                    });
+                }
+
+                result.items.Add(dayofWeeks[dayofWeek], stats);
+            }
+
+
+            return result;
         }
 
         private StatisticsQueryInput ParseQueryInput(TimeFilterDto timeFilter, bool byWeek = true)

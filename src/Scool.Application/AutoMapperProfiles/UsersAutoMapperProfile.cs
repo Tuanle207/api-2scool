@@ -3,6 +3,7 @@ using Scool.Application.Dtos;
 using Scool.Domain.Common;
 using Scool.Dtos;
 using Scool.Users;
+using System.Collections.Generic;
 using System.Linq;
 using Volo.Abp.Identity;
 
@@ -44,7 +45,8 @@ namespace Scool.AutoMapperProfiles
                 EmailConfirmed = src.EmailConfirmed,
                 PhoneNumber = src.PhoneNumber,
                 PhoneNumberConfirmed = src.PhoneNumberConfirmed,
-                RoleId = src.Roles.Count > 0 ? src.Roles.FirstOrDefault().RoleId : null,
+                ListRoleId = src.Roles.Select(x => x.RoleId).ToList(),
+                Roles = new List<RoleForSimpleListDto>()
             };
 
             return result;

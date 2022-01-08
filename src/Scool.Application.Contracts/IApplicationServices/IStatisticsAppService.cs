@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Scool.Application.Dtos;
 using Scool.Domain.Views;
+using Scool.Dtos;
 using Scool.Infrastructure.Common;
 using System.IO;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace Scool.Application.IApplicationServices
         Task<PagingModel<DcpClassFault>> GetClassesFaults(TimeFilterDto timeFilter);
         Task<PagingModel<CommonDcpFault>> GetCommonFaults(TimeFilterDto timeFilter);
         Task<PagingModel<StudentWithMostFaults>> GetStudentsWithMostFaults(TimeFilterDto timeFilter);
+        Task<LineChartStatDto> GetStatForLineChart(TimeFilterDto timeFilter);
         Task<MemoryStream> GetOverallRankingExcel(TimeFilterDto timeFilter);
         Task<MemoryStream> GetDcpRankingExcel(TimeFilterDto timeFilter);
         Task<MemoryStream> GetClassesFaultsExcel(TimeFilterDto timeFilter);
