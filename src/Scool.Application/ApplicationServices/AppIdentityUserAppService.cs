@@ -34,7 +34,6 @@ namespace Scool.ApplicationServices
         private readonly IIdentityRoleRepository _identityRoleRepository;
         private readonly IRepository<UserProfile, Guid> _userProfilesRepository;
         private readonly IRepository<AppUser, Guid> _userRepository;
-        private readonly IOptions<IdentityOptions> _identityOptions;
 
         public AppIdentityUserAppService(IdentityUserManager identityUserManager, IIdentityUserRepository identityUserRepository,
             IIdentityRoleRepository identityRoleRepository, IOptions<IdentityOptions> identityOptions,
@@ -44,7 +43,6 @@ namespace Scool.ApplicationServices
             _identityUserManager = identityUserManager;
             _identityUserRepository = identityUserRepository;
             _identityRoleRepository = identityRoleRepository;
-            _identityOptions = identityOptions;
             _userProfilesRepository = userProfilesRepository;
             _userRepository = userRepository;
         }
@@ -107,24 +105,28 @@ namespace Scool.ApplicationServices
                 .Select(x => ObjectMapper.Map<IdentityUser, UserDto>(x))
                 .ToListAsync();
 
-            var listRoleId = users.Where(x => x.RoleId.HasValue)
-                .Select(x => x.RoleId.Value)
+            var listUniqueRoleId = users
+                .SelectMany(x => x.ListRoleId)
+                .Distinct()
                 .ToList();
 
             // User roles
             IList<RoleForSimpleListDto> roles = await _identityRoleRepository.ToEfCoreRepository()
                 .AsNoTracking()
-                .Where(x => listRoleId.Contains(x.Id))
+                .Where(x => listUniqueRoleId.Contains(x.Id))
                 .Select(x => ObjectMapper.Map<IdentityRole, RoleForSimpleListDto>(x))
                 .ToListAsync();
 
             foreach (UserDto user in users)
             {
-                RoleForSimpleListDto role = user.RoleId.HasValue 
-                    ? roles.FirstOrDefault(x => x.Id == user.RoleId)
-                    : null;
-
-                user.Role = role;
+                foreach (Guid roleId in user.ListRoleId)
+                {
+                    RoleForSimpleListDto role = roles.FirstOrDefault(x => x.Id == roleId);
+                    if (role != null)
+                    {
+                        user.Roles.Add(role);
+                    }
+                }
             }
 
             return new PagingModel<UserDto>(users, totalCount, pageIndex, pageSize);

@@ -15,7 +15,7 @@ namespace Scool.Dtos
         public bool EmailConfirmed { get; set; }
         public string PhoneNumber { get; set; }
         public bool PhoneNumberConfirmed { get; set; }
-        public RoleForSimpleListDto Role { get; set; }
-        public Guid? RoleId { get; set; }
+        public List<RoleForSimpleListDto> Roles { get; set; }
+        public List<Guid> ListRoleId { get; set; }
     }
 }

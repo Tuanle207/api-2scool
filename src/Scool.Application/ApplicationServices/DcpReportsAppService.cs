@@ -237,6 +237,7 @@ namespace Scool.ApplicationServices
         public async override Task<DcpReportDto> GetAsync(Guid id)
         {
             var item = await _dcpReportsRepo
+                .AsNoTracking()
                 .Where(x => x.Id == id)
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
