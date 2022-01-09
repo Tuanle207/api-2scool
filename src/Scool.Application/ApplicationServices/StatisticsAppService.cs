@@ -334,7 +334,7 @@ namespace Scool.ApplicationServices
                 { 6, "CN" },
             };
 
-            for (int dayofWeek = 0; dayofWeek < 6; dayofWeek++) // 0 = monday, 1 = tuesday, ...
+            for (int dayofWeek = 0; dayofWeek <= 6; dayofWeek++) // 0 = monday, 1 = tuesday, ...
             {
                 var stats = new List<LineChartStat>();
                 DateTime currentDate = timeFilter.StartTime.Date.AddDays(dayofWeek);
