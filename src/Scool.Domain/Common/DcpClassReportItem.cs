@@ -9,19 +9,19 @@ namespace Scool.Domain.Common
 {
     public class DcpClassReportItem : Entity<Guid>
     {
-        public Guid DcpClassReportId { get; set; }
-        public Guid RegulationId { get; set; }
-        public Regulation Regulation { get; set; }
-        public ICollection<DcpStudentReport> RelatedStudents { get; set; }
-
         public DcpClassReportItem()
         {
             RelatedStudents = new List<DcpStudentReport>();
         }
-        public DcpClassReportItem(Guid id)
+
+        public DcpClassReportItem(Guid id) : this()
         {
             Id = id;
-            RelatedStudents = new List<DcpStudentReport>();
         }
+
+        public Guid DcpClassReportId { get; set; }
+        public Guid RegulationId { get; set; }
+        public Regulation Regulation { get; set; }
+        public ICollection<DcpStudentReport> RelatedStudents { get; set; }
     }
 }

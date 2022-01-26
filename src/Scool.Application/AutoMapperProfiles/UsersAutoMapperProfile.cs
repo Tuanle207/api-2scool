@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using Scool.Application.Dtos;
 using Scool.Domain.Common;
+using Scool.Dtos;
 using Scool.Users;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Volo.Abp.Identity;
 
 namespace Scool.AutoMapperProfiles
 {
@@ -24,6 +23,33 @@ namespace Scool.AutoMapperProfiles
                     opt.MapFrom(src => src.UserId))
                 .ForMember(dest => dest.UserProfileId, opt =>
                     opt.MapFrom(src => src.Id));
+
+            CreateMap<IdentityUser, UserDto>()
+                .ConvertUsing(src => MapIdentityUserToUserDto(src));
+
+            CreateMap<IdentityRole, RoleForSimpleListDto>()
+                .ForMember(dest => dest.Id, opt =>
+                    opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Name, opt =>
+                    opt.MapFrom(src => src.Name));
+        }
+
+        private UserDto MapIdentityUserToUserDto(IdentityUser src)
+        {
+            var result = new UserDto
+            {
+                Id = src.Id,
+                Name = src.Name,
+                UserName = src.UserName,
+                Email = src.Email,
+                EmailConfirmed = src.EmailConfirmed,
+                PhoneNumber = src.PhoneNumber,
+                PhoneNumberConfirmed = src.PhoneNumberConfirmed,
+                ListRoleId = src.Roles.Select(x => x.RoleId).ToList(),
+                Roles = new List<RoleForSimpleListDto>()
+            };
+
+            return result;
         }
     }
 }

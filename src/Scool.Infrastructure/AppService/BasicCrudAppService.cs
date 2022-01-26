@@ -50,7 +50,8 @@ namespace Scool.Infrastructure.ApplicationServices
                 query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
                 query = query.Page(pageIndex, pageSize);
 
-                var items = ObjectMapper.Map<List<TEntity>, List<TGetListDto>>(await query.ToListAsync());
+                var items = await query.Select(x => ObjectMapper.Map<TEntity, TGetListDto>(x))
+                    .ToListAsync();
                 var totalCount = await Repository.Filter(input.Filter).CountAsync();
 
                 return new PagingModel<TGetListDto>(items, totalCount, pageIndex, pageSize);

@@ -10,7 +10,7 @@ namespace Scool.Application.Dtos
     public class DcpStudentReportDto : Entity<Guid>
     {
         public Guid StudentId { get; set; }
-        public StudentDto Student { get; set; }
+        public StudentForSimpleListDto Student { get; set; }
         public Guid DcpClassReportItemId { get; set; }
     }
 }

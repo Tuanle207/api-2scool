@@ -5,6 +5,7 @@ using Scool.Application.Dtos;
 using Scool.Application.IApplicationServices;
 using Scool.Application.Permissions;
 using Scool.Domain.Common;
+using Scool.Domain.Shared.AppConsts;
 using Scool.Infrastructure.ApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
@@ -66,11 +67,11 @@ namespace Scool.ApplicationServices
             var report = new DcpReport(_guidGenerator.Create());
 
             // report on each class
-            var clsReports = input.DcpClassReports;
+            IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                var penalty = 0;
+                int penalty = 0;
 
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
@@ -79,20 +80,21 @@ namespace Scool.ApplicationServices
                 // regulations broken
                 foreach (var reg in faults)
                 {
+                    IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
-                    // calc pelnaty
-                    var point = await _regulationsRepo
+                    // accumulate penalty
+                    Regulation regulation = await _regulationsRepo
                         .Where(x => x.Id == reg.RegulationId)
-                        .Select(x => x.Point)
                         .FirstOrDefaultAsync();
-                    penalty += point;
+                    int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
+                    penalty += regulation.Point * mutiply;
 
                     // student breaking the regulations
-                    var studentIds = reg.RelatedStudentIds;
-                    var students = await _studentsRepo.Where(x => studentIds.Contains(x.Id)).ToListAsync();
+                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
+                        .ToListAsync();
 
                     foreach (var stdnt in students)
                     {
@@ -132,15 +134,15 @@ namespace Scool.ApplicationServices
 
             await CleanDcpReport(id);
 
-            // replace with nkew report with the same ID (like the way we are doing HTTP PUT)
+            // replace with new report with the same ID (like the way we are doing HTTP PUT)
             var report = new DcpReport(id);
 
             // report on each class
-            var clsReports = input.DcpClassReports;
+            IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                var penalty = 0;
+                int penalty = 0;
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
 
@@ -148,20 +150,21 @@ namespace Scool.ApplicationServices
                 // regulations broken
                 foreach (var reg in faults)
                 {
+                    IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
-                    // calc pelnaty
-                    var point = await _regulationsRepo
+                    // accumulate penalty
+                    Regulation regulation = await _regulationsRepo
                         .Where(x => x.Id == reg.RegulationId)
-                        .Select(x => x.Point)
                         .FirstOrDefaultAsync();
-                    penalty += point;
+                    int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
+                    penalty += regulation.Point * mutiply;
 
                     // student breaking the regulations
-                    var studentIds = reg.RelatedStudentIds;
-                    var students = await _studentsRepo.Where(x => studentIds.Contains(x.Id)).ToListAsync();
+                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
+                        .ToListAsync();
 
                     foreach (var stdnt in students)
                     {
@@ -234,6 +237,7 @@ namespace Scool.ApplicationServices
         public async override Task<DcpReportDto> GetAsync(Guid id)
         {
             var item = await _dcpReportsRepo
+                .AsNoTracking()
                 .Where(x => x.Id == id)
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
@@ -262,6 +266,7 @@ namespace Scool.ApplicationServices
             return item;
         }
 
+        [Obsolete]
         [Authorize(ReportsPermissions.GetDcpReportApprovalHistory)]
         public async override Task<PagingModel<DcpReportDto>> PostPagingAsync(PageInfoRequestDto input)
         {
@@ -300,8 +305,6 @@ namespace Scool.ApplicationServices
 
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x)).ToListAsync();
 
-            //var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
-
             // get creators
             var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
             var creators = await _usersRepo
@@ -334,6 +337,91 @@ namespace Scool.ApplicationServices
                .Select(x => ObjectMapper.Map<DcpReport, CreateUpdateDcpReportDto>(x))
                .FirstOrDefaultAsync();
             return item;
+        }
+
+        [Authorize(ReportsPermissions.GetMyDcpReport)]
+        public async Task<PagingModel<DcpReportDto>> PostGetMyReportsAsync(PageInfoRequestDto input)
+        {
+            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
+            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+
+            // Create query with filters
+            var query = _dcpReportsRepo.Filter(input.Filter);
+
+            // Filter by current user
+            var userId = CurrentUser.Id;
+            if (!userId.HasValue)
+            {
+                return null;
+            }
+            query = query.Where(x => x.CreatorId == userId.Value);
+
+            // Count total count
+            int totalCount = await query.CountAsync();
+
+            // Sort descending by time
+            query = query.OrderByDescending(x => x.CreationTime);
+
+            // Pagination
+            query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
+            query = query
+                .AsNoTracking()
+                .Include(e => e.DcpClassReports)
+                .ThenInclude(e => e.Class);
+
+            // Call query with projection
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
+
+            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
+        }
+
+        [Authorize(ReportsPermissions.GetDcpReportApprovalHistory)]
+        public async Task<PagingModel<DcpReportDto>> PostGetReportsForApprovalAsync(PageInfoRequestDto input)
+        {
+            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
+            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+
+            // Create query with filters
+            var query = _dcpReportsRepo.Filter(input.Filter);
+
+            int totalCount = await query.CountAsync();
+
+            // Sort descending by time
+            query = query.OrderByDescending(x => x.CreationTime);
+
+            // Pagination
+            query = query.Page(pageIndex, pageSize);
+
+            // Include navigation properties
+            query = query
+                .AsNoTracking()
+                .Include(e => e.DcpClassReports)
+                .ThenInclude(e => e.Class);
+
+            // Call query with projection
+            var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+                .ToListAsync();
+
+            // get creators
+            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
+            var creators = await _usersRepo
+                .Where(x => userIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
+                .ToListAsync();
+
+            // attach creator on each item
+            foreach (var report in items)
+            {
+                if (report.CreatorId != null)
+                {
+                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
+                }
+            }
+
+            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
 
         private async Task CleanDcpReport(Guid id)
@@ -370,117 +458,6 @@ namespace Scool.ApplicationServices
 
             // force save changes in the middle of current unit of work
             await CurrentUnitOfWork.SaveChangesAsync();
-        }
-
-        [Authorize(ReportsPermissions.GetMyDcpReport)]
-        public async Task<PagingModel<DcpReportDto>> PostGetMyReportsAsync(PageInfoRequestDto input)
-        {
-            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
-            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-
-            var query = _dcpReportsRepo.AsQueryable();
-
-            var userId = CurrentUser.Id;
-            if (userId == null)
-            {
-                return null;
-            }
-            query = query.Where(x => x.CreatorId == userId);
-
-            var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
-            if (startDateFilter != null)
-            {
-                var startDate = DateTime.ParseExact(startDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date >= startDate.Date);
-            }
-            var endDateFilter = input.Filter.FirstOrDefault(x => x.Key == "EndDate");
-            if (endDateFilter != null)
-            {
-                var endDate = DateTime.ParseExact(endDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date <= endDate.Date);
-            }
-
-            query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
-            query = query.Page(pageIndex, pageSize);
-            query = query
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation);
-
-            var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
-
-            var totalCount = await query.CountAsync();
-
-            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
-        }
-
-        public async Task<PagingModel<DcpReportDto>> PostGetReportsForApprovalAsync(PageInfoRequestDto input)
-        {
-            var pageSize = input.PageSize > 0 ? input.PageSize : 10;
-            var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-
-            var query = _dcpReportsRepo.AsQueryable();
-
-            var statusList = input.Filter.Where(x => x.Key == "Status").Select(x => x.Value).ToList();
-            if (statusList.Count > 0)
-            {
-                query = query.Where(x => statusList.Contains(x.Status));
-            }
-
-            var startDateFilter = input.Filter.FirstOrDefault(x => x.Key == "StartDate");
-            if (startDateFilter != null)
-            {
-                var startDate = DateTime.ParseExact(startDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date >= startDate.Date);
-            }
-
-            var endDateFilter = input.Filter.FirstOrDefault(x => x.Key == "EndDate");
-            if (endDateFilter != null)
-            {
-                var endDate = DateTime.ParseExact(endDateFilter.Value, "MM/dd/yyyy", null);
-                query = query.Where(e => e.CreationTime.Date <= endDate.Date);
-            }
-
-            query = query.OrderByDescending(x => x.CreationTime);
-            query = query.Page(pageIndex, pageSize);
-            query = query
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation);
-
-            var items = ObjectMapper.Map<List<DcpReport>, List<DcpReportDto>>(await query.ToListAsync());
-
-            // get creators
-            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
-            var creators = await _usersRepo
-                .Where(x => userIds.Contains(x.Id))
-                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                .ToListAsync();
-
-            // attach creator on each item
-            foreach (var report in items)
-            {
-                if (report.CreatorId != null)
-                {
-                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
-                }
-            }
-
-            var totalCount = await query.CountAsync();
-
-            return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
         }
     }
 }

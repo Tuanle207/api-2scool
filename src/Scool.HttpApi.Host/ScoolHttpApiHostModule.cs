@@ -29,6 +29,8 @@ using Volo.Abp.Swashbuckle;
 using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using IdentityServer4.Extensions;
 
 namespace Scool
 {
@@ -127,6 +129,8 @@ namespace Scool
                     options.Authority = configuration["AuthServer:Authority"];
                     options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                     options.Audience = "Scool";
+                    // TODO: set this temporary for dev
+                    options.TokenValidationParameters.ValidateIssuer = false;
                     options.BackchannelHttpHandler = new HttpClientHandler
                     {
                         ServerCertificateCustomValidationCallback =
@@ -236,6 +240,14 @@ namespace Scool
             // {
             //     app.UseMultiTenancy();
             // }
+
+            //  app.Use(async (ctx, next) =>
+            // {
+            //     var configuration = context.GetConfiguration();
+            //     ctx.SetIdentityServerOrigin(configuration["App:IdentityServerOrigin"]);
+            //     await next();
+            // });
+
 
             app.UseUnitOfWork();
             app.UseIdentityServer();

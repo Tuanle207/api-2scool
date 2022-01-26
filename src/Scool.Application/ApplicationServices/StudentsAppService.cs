@@ -35,12 +35,19 @@ namespace Scool.Application.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             var query = _studentRepo.Filter(input.Filter);
-            query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
-            query = query.Page(pageIndex, pageSize);
+            var totalCount = await query.CountAsync();
+
             query = query.Include(e => e.Class);
 
-            var items = ObjectMapper.Map<List<Student>, List<StudentDto>>(await query.ToListAsync());
-            var totalCount = await _studentRepo.Filter(input.Filter).CountAsync();
+            query = string.IsNullOrEmpty(input.SortName) ? 
+                query.OrderBy(x => x.Class.Name)
+                .OrderBy(x => x.Name) : 
+                query.OrderBy(input.SortName, input.Ascend);
+                
+            query = query.Page(pageIndex, pageSize);
+
+            var items = await query.Select(x => ObjectMapper.Map<Student, StudentDto>(x))
+                .ToListAsync();
 
             return new PagingModel<StudentDto>(items, totalCount, pageIndex, pageSize);
         }

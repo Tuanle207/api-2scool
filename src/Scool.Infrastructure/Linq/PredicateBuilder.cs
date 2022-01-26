@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -49,9 +50,19 @@ namespace Scool.Infrastructure.Linq
             var objValues = codes.Cast<object>().ToList();
             var type = typeof(List<object>);
             var methodInfo = type.GetMethod("Contains", new Type[] { typeof(object) });
-            var list = Expression.Constant(objValues);
-            var body = Expression.Call(list, methodInfo, left);
-            return body;
+            var list = Expression.Constant(objValues, typeof(List<object>));
+            var convertedLeft = Expression.Convert(left, typeof(object));
+
+            try
+            {
+                var body = Expression.Call(list, methodInfo, convertedLeft);
+                return body;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return null;
         }
 
         private static Expression MakeString(Expression source)
@@ -72,10 +83,19 @@ namespace Scool.Infrastructure.Linq
                 }
                 else
                 {
-                    var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
-                    typedValue = valueType.IsEnum ? Enum.Parse(valueType, value) :
-                        valueType == typeof(Guid) ? Guid.Parse(value) :
-                        Convert.ChangeType(value, valueType);
+                    try
+                    {
+                        var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
+                        typedValue = valueType.IsEnum ? Enum.Parse(valueType, value) :
+                            valueType == typeof(Guid) ? Guid.Parse(value) :
+                            valueType == typeof(DateTime) ? DateTime.ParseExact(value, "MM/dd/yyyy", CultureInfo.InvariantCulture) :
+                            Convert.ChangeType(value, valueType);
+                    }
+                    catch (Exception ex)
+                    {
+                        var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
+                        typedValue = Convert.ChangeType(value, valueType);
+                    }
                 }
             }
             var right = Expression.Constant(typedValue, left.Type);

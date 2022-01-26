@@ -9,6 +9,6 @@ namespace Scool.Application.Dtos
     public class CreateUpdateDcpClassReportItemDto
     {
         public Guid RegulationId { get; set; }
-        public ICollection<Guid> RelatedStudentIds { get; set; }
+        public IList<Guid> RelatedStudentIds { get; set; }
     }
 }

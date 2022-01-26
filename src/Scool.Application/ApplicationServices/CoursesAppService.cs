@@ -46,8 +46,9 @@ namespace Scool.Application.ApplicationServices
             var query = _courseRepo.Filter(input.Filter)
                             .OrderBy(x => x.StartTime);
 
-            var items = ObjectMapper.Map<List<Course>, List<CourseForSimpleListDto>>(await query.ToListAsync());
-            var totalCount = await _courseRepo.Filter(input.Filter).CountAsync();
+            var items = await query.Select(x => ObjectMapper.Map<Course, CourseForSimpleListDto>(x))
+                .ToListAsync();
+            var totalCount = await query.CountAsync();
 
             return new PagingModel<CourseForSimpleListDto>(items, totalCount, pageIndex, pageSize);
         }

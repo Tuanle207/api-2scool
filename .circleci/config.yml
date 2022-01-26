@@ -1,0 +1,128 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:5.0
+    steps:
+      - checkout
+      - run:
+          working_directory: ~/project
+          name: Run build
+          command: |
+            dotnet build
+  test:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:5.0
+    steps:
+      - checkout
+      - run:
+          working_directory: ~/project
+          name: Run test
+          command: |
+            dotnet test
+  deployment:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - $SSH_FINGERPRINT
+      - run:
+          working_directory: ~/project
+          name: Install .NET SDK
+          command: |
+            wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+            sudo dpkg -i packages-microsoft-prod.deb
+            rm packages-microsoft-prod.deb
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https
+            sudo apt-get update
+            sudo apt-get install -y dotnet-sdk-5.0
+            dotnet tool install --global dotnet-ef
+      - run:
+          working_directory: ~/project
+          name: Build .Net Application for release
+          command: |
+            dotnet publish -c Release -o dist
+      - run:
+          working_directory: ~/project
+          name: Generate SQL script for database migration
+          command: |
+            cd src/Scool.EntityFrameworkCore.DbMigrations
+            ~/.dotnet/tools/dotnet-ef migrations script -o ../../dist/migrations_script.sql
+      # Get ENV Variables from CircleCI and fill them into configuration files
+      # Then copy them to distribution directory
+      - run:
+          working_directory: ~/project
+          name: Fill Enviroment Variables in configuration files
+          command: |
+            sed -i -- "s/@USER_NAME/$DROPLET_USER/g" tmuzik-api.service
+            sed -i -- "s/@HOST_IP/$DROPLET_IP/g" tmuzik-api.nginx
+            cp tmuzik-api.service dist/
+            cp tmuzik-api.nginx dist/
+      - run:
+          name: Stop .NET Application
+          command: |
+            /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
+              systemctl stop tmuzik-api.service
+              systemctl disable tmuzik-api.service
+              cd /var/www/html/tmuzik-api
+              rm -r -f dist
+            "
+      - run:
+          working_directory: ~/project
+          name: Copy distribution folder to hosting VPS
+          command: |
+            scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/html/tmuzik-api/
+      # Run database migrations
+      - run:
+          name: Run Database migrations
+          command: |
+            echo "Run Database migrations ------> TODO"
+      - run:
+          name: Start .NET Application
+          command: |
+            /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
+              cd /var/www/html/tmuzik-api/dist
+              cp tmuzik-api.service /etc/systemd/system/tmuzik-api.service
+              cp tmuzik-api.nginx /etc/nginx/sites-available/tmuzik-api
+              ln -sf /etc/nginx/sites-available/tmuzik-api /etc/nginx/sites-enabled/
+              nginx -t
+              systemctl enable tmuzik-api.service
+              systemctl start tmuzik-api.service
+              systemctl restart nginx
+            "
+workflows:
+  version: 2
+  check_build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: dev, master
+  build_and_test:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: dev, master
+      - test:
+          requires:
+            - build
+          filters:
+            branches:
+              only: dev, master
+  deploy:
+    when:
+      equal: [ master, << pipeline.git.branch >> ]
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - deployment:
+          requires:
+            - test
+    
