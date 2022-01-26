@@ -11,16 +11,6 @@ jobs:
           name: Run build
           command: |
             dotnet build
-  test:
-    docker:
-      - image: mcr.microsoft.com/dotnet/sdk:5.0
-    steps:
-      - checkout
-      - run:
-          working_directory: ~/project
-          name: Run test
-          command: |
-            dotnet test
   deployment:
     docker:
       - image: cimg/base:2021.04
@@ -58,42 +48,42 @@ jobs:
           working_directory: ~/project
           name: Fill Enviroment Variables in configuration files
           command: |
-            sed -i -- "s/@USER_NAME/$DROPLET_USER/g" tmuzik-api.service
-            sed -i -- "s/@HOST_IP/$DROPLET_IP/g" tmuzik-api.nginx
-            cp tmuzik-api.service dist/
-            cp tmuzik-api.nginx dist/
+            sed -i -- "s/@USER_NAME/$DROPLET_USER/g" 2scool-api.service
+            sed -i -- "s/@HOST_IP/$DROPLET_IP/g" 2scool-api.nginx
+            cp 2scool-api.service dist/
+            cp 2scool-api.nginx dist/
       - run:
           name: Stop .NET Application
           command: |
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-              systemctl stop tmuzik-api.service
-              systemctl disable tmuzik-api.service
-              cd /var/www/html/tmuzik-api
+              systemctl stop 2scool-api.service
+              systemctl disable 2scool-api.service
+              cd /var/www/2scool
               rm -r -f dist
             "
       - run:
           working_directory: ~/project
           name: Copy distribution folder to hosting VPS
           command: |
-            scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/html/tmuzik-api/
+            scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/2scool/
       # Run database migrations
       - run:
           name: Run Database migrations
           command: |
             echo "Run Database migrations ------> TODO"
-      - run:
-          name: Start .NET Application
-          command: |
-            /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-              cd /var/www/html/tmuzik-api/dist
-              cp tmuzik-api.service /etc/systemd/system/tmuzik-api.service
-              cp tmuzik-api.nginx /etc/nginx/sites-available/tmuzik-api
-              ln -sf /etc/nginx/sites-available/tmuzik-api /etc/nginx/sites-enabled/
-              nginx -t
-              systemctl enable tmuzik-api.service
-              systemctl start tmuzik-api.service
-              systemctl restart nginx
-            "
+      # - run:
+      #     name: Start .NET Application
+      #     command: |
+      #       /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
+      #         cd /var/www/2scool/dist
+      #         cp tmuzik-api.service /etc/systemd/system/tmuzik-api.service
+      #         cp tmuzik-api.nginx /etc/nginx/sites-available/tmuzik-api
+      #         ln -sf /etc/nginx/sites-available/tmuzik-api /etc/nginx/sites-enabled/
+      #         nginx -t
+      #         systemctl enable tmuzik-api.service
+      #         systemctl start tmuzik-api.service
+      #         systemctl restart nginx
+      #       "
 workflows:
   version: 2
   check_build:
