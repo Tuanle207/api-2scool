@@ -10,6 +10,9 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+#Static files
+/src/Scool.HttpApi.Host/wwwroot/photo/**
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
