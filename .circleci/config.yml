@@ -92,27 +92,12 @@ workflows:
           filters:
             branches:
               only: dev, master
-  build_and_test:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only: dev, master
-      - test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: dev, master
   deploy:
     when:
       equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - build
-      - test:
-          requires:
-            - build
       - deployment:
           requires:
-            - test
+            - build
     
