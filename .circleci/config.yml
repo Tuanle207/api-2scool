@@ -50,8 +50,8 @@ jobs:
           working_directory: ~/project
           name: Fill Enviroment Variables in configuration files
           command: |
-            sed -i -- "s/@USER_NAME/$DROPLET_USER/g" 2scool-api.service
-            sed -i -- "s/@HOST_IP/$DROPLET_IP/g" 2scool-api.nginx
+            sed -i -- "s/<USER_NAME>/$DROPLET_USER/g" 2scool-api.service
+            sed -i -- "s/<HOST_IP>/$DROPLET_IP/g" 2scool-api.nginx
             cp 2scool-api.service dist/
             cp 2scool-api.nginx dist/
             echo "Fill Enviroment Variables in configuration files Successfully"
