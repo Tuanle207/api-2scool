@@ -36,12 +36,14 @@ jobs:
           name: Build .Net Application for release
           command: |
             dotnet publish -c Release -o dist
+            echo "Publish Successfully"
       - run:
           working_directory: ~/project
           name: Generate SQL script for database migration
           command: |
             cd src/Scool.EntityFrameworkCore.DbMigrations
             ~/.dotnet/tools/dotnet-ef migrations script -o ../../dist/migrations_script.sql
+            echo "Generate SQL script for database migration Successfully"
       # Get ENV Variables from CircleCI and fill them into configuration files
       # Then copy them to distribution directory
       - run:
@@ -52,38 +54,57 @@ jobs:
             sed -i -- "s/@HOST_IP/$DROPLET_IP/g" 2scool-api.nginx
             cp 2scool-api.service dist/
             cp 2scool-api.nginx dist/
+            echo "Fill Enviroment Variables in configuration files Successfully"
       - run:
           name: Stop .NET Application
           command: |
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-              systemctl stop 2scool-api.service
-              systemctl disable 2scool-api.service
+              
+              is_service_exists() {
+                local x=$1
+                if systemctl status "${x}" 2> /dev/null | grep -Fq "Active:"; then
+                  return 0
+                else
+                  return 1
+                fi
+              }
+
+              if is_service_exists '2scool-api.service'; then
+                systemctl stop 2scool-api.service
+                systemctl disable 2scool-api.service
+              fi
+
+              unset -f is_service_exists
               cd /var/www/2scool
               rm -r -f dist
             "
+            echo "Stop .NET Application Successfully"
       - run:
           working_directory: ~/project
           name: Copy distribution folder to hosting VPS
           command: |
             scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/2scool/
+            echo "Copy distribution folder to hosting VPS Successfully"
       # Run database migrations
+      # sqlcmd -S -i /var/www/2scool/dist/migrations_script.sql
       - run:
           name: Run Database migrations
           command: |
-            echo "Run Database migrations ------> TODO"
-      # - run:
-      #     name: Start .NET Application
-      #     command: |
-      #       /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-      #         cd /var/www/2scool/dist
-      #         cp tmuzik-api.service /etc/systemd/system/tmuzik-api.service
-      #         cp tmuzik-api.nginx /etc/nginx/sites-available/tmuzik-api
-      #         ln -sf /etc/nginx/sites-available/tmuzik-api /etc/nginx/sites-enabled/
-      #         nginx -t
-      #         systemctl enable tmuzik-api.service
-      #         systemctl start tmuzik-api.service
-      #         systemctl restart nginx
-      #       "
+            echo "Run Database migrations Successfully"
+      - run:
+          name: Start .NET Application
+          command: |
+            /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
+              cd /var/www/2scool/dist
+              cp 2scool-api.service /etc/systemd/system/2scool-api.service
+              cp 2scool-api.nginx /etc/nginx/sites-available/2scool-api
+              ln -sf /etc/nginx/sites-available/2scool-api /etc/nginx/sites-enabled/
+              nginx -t
+              systemctl enable 2scool-api.service
+              systemctl start 2scool-api.service
+              systemctl restart nginx
+            "
+            echo "Start .NET Application Successfully"
 workflows:
   version: 2
   check_build:
@@ -91,7 +112,7 @@ workflows:
       - build:
           filters:
             branches:
-              only: dev, master
+              only: master
   deploy:
     when:
       equal: [ master, << pipeline.git.branch >> ]
