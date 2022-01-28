@@ -8,6 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+     <AssetsSourceFiles Include="DataSeeds\JsonData\*.json" />
+  </ItemGroup>
+
+  <Target Name="JsonData" AfterTargets="AfterBuild">
+    <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\DataSeeds" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="JsonDataOnPublish" AfterTargets="Publish">
+    <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\DataSeeds" SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
     <ProjectReference Include="..\Scool.Domain.Shared\Scool.Domain.Shared.csproj" />
   </ItemGroup>
 
