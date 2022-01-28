@@ -51,9 +51,15 @@ jobs:
           name: Fill Enviroment Variables in configuration files
           command: |
             sed -i -- "s/<USER_NAME>/$DROPLET_USER/g" 2scool-api.service
-            sed -i -- "s/<HOST_IP>/$DROPLET_IP/g" 2scool-api.nginx
+            sed -i -- "s/<AUTH_URL>/$AUTH_URL/g" appsettings.json
+            sed -i -- "s/<APP_URL>/$APP_URL/g" 2scool-api.nginx
+            sed -i -- "s/<CLIENT_URL>/$CLIENT_URL/g" appsettings.json
+            sed -i -- "s/<CORS_ORIGINS>/$CORS_ORIGINS/g" appsettings.json
+            sed -i -- "s/<REDIRECT_URLS>/$REDIRECT_URLS/g" appsettings.json
+            sed -i -- "s/<DB_CONNECTION_STRING>/$DB_CONNECTION_STRING/g" appsettings.json
             cp 2scool-api.service dist/
             cp 2scool-api.nginx dist/
+            \cp -fR appsettings.json dist/
             echo "Fill Enviroment Variables in configuration files Successfully"
       - run:
           name: Stop .NET Application
@@ -75,7 +81,7 @@ jobs:
               fi
 
               unset -f is_service_exists
-              cd /var/www/2scool
+              cd /var/www/2scool-api
               rm -r -f dist
             "
             echo "Stop .NET Application Successfully"
@@ -83,19 +89,19 @@ jobs:
           working_directory: ~/project
           name: Copy distribution folder to hosting VPS
           command: |
-            scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/2scool/
+            scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -r ~/project/dist $DROPLET_USER@$DROPLET_IP:/var/www/2scool-api/
             echo "Copy distribution folder to hosting VPS Successfully"
       # Run database migrations
-      # sqlcmd -S -i /var/www/2scool/dist/migrations_script.sql
       - run:
           name: Run Database migrations
           command: |
+            sqlcmd -S localhost -U <DB_USER> -P <DB_PASSWORD> -d <DB_DATABASE_NAME> -i /var/www/2scool-api/dist/migrations_script.sql -I
             echo "Run Database migrations Successfully"
       - run:
           name: Start .NET Application
           command: |
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-              cd /var/www/2scool/dist
+              cd /var/www/2scool-api/dist
               cp 2scool-api.service /etc/systemd/system/2scool-api.service
               cp 2scool-api.nginx /etc/nginx/sites-available/2scool-api
               ln -sf /etc/nginx/sites-available/2scool-api /etc/nginx/sites-enabled/

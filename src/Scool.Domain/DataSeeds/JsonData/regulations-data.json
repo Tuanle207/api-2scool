@@ -5,7 +5,7 @@
       {
         "regulationName": "Chậm học",
         "description": "Đi học đúng giờ, có mặt ở lớp trước khi trống đánh vào sinh hoạt 15 phút",
-        "note": "Đội ANHĐ, đội cờ đỏ làm việc trong suốt giờ sinh hoạt 15’ nên ko tính lỗi vào chậm; cá nhân giữ SĐB, cá nhân sắp xếp xe đạp",
+        "note": "Đội ANHĐ, đội cờ đỏ làm việc trong suốt giờ sinh hoạt 15' nên ko tính lỗi vào chậm; cá nhân giữ SĐB, cá nhân sắp xếp xe đạp",
         "point": 1
       },
       {
@@ -109,7 +109,7 @@
     "items": [
       {
         "regulationName": "Đồng phục",
-        "description": "Áo: áo sơ mi đúng mẫu của trường (thứ 2,3,5,6: mặc áo trắng; thứ 4,7: mặc áo đoàn )\nQuần: quần tây tối màu\nNữ mặc áo dài trắng, nam sơ vin trong giờ chào cờ đầu tuần, các dịp lễ, những ngày học có đón các đoàn khách đến trường.\nPhù hiệu: đúng mẫu, đúng quy cách (không thêm ảnh hoặc các đồ trang trí khác)\nGiày, dép quai hậu: (luôn thường trực, không quy định theo thời tiết, không đi dép cross)\nMũ trắng: (dùng trong các buổi tập trung – nếu cần\nTrời lạnh: mặc thêm áo đồng phục mùa đông.",
+        "description": "Áo: áo sơ mi đúng mẫu của trường (thứ 2,3,5,6: mặc áo trắng; thứ 4,7: mặc áo đoàn )\nQuần: quần tây tối màu\nNữ mặc áo dài trắng, nam sơ vin trong giờ chào cờ đầu tuần, các dịp lễ, những ngày học có đón các đoàn khách đến trường.\nPhù hiệu: đúng mẫu, đúng quy cách (không thêm ảnh hoặc các đồ trang trí khác)\nGiày, dép quai hậu: (luôn thường trực, không quy định theo thời tiết, không đi dép cross)\nMũ trắng: (dùng trong các buổi tập trung - nếu cần\nTrời lạnh: mặc thêm áo đồng phục mùa đông.",
         "note": "",
         "point": 1
       },
