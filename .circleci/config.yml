@@ -74,12 +74,10 @@ jobs:
                   return 1
                 fi
               }
-
               if is_service_exists '2scool-api.service'; then
                 systemctl stop 2scool-api.service
                 systemctl disable 2scool-api.service
               fi
-
               unset -f is_service_exists
               cd /var/www/2scool-api
               rm -r -f dist
