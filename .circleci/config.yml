@@ -51,8 +51,8 @@ jobs:
           name: Fill Enviroment Variables in configuration files
           command: |
             sed -i -- "s/<USER_NAME>/$DROPLET_USER/g" 2scool-api.service
+            sed -i -- "s/<HOST_IP>/$DROPLET_IP/g" 2scool-api.nginx
             sed -i -- "s/<AUTH_URL>/$AUTH_URL/g" appsettings.json
-            sed -i -- "s/<APP_URL>/$APP_URL/g" 2scool-api.nginx
             sed -i -- "s/<CLIENT_URL>/$CLIENT_URL/g" appsettings.json
             sed -i -- "s/<CORS_ORIGINS>/$CORS_ORIGINS/g" appsettings.json
             sed -i -- "s/<REDIRECT_URLS>/$REDIRECT_URLS/g" appsettings.json
@@ -93,7 +93,7 @@ jobs:
       - run:
           name: Run Database migrations
           command: |
-            sqlcmd -S localhost -U <DB_USER> -P <DB_PASSWORD> -d <DB_DATABASE_NAME> -i /var/www/2scool-api/dist/migrations_script.sql -I
+            sqlcmd -S localhost -U $DB_USER -P $DB_PASSWORD -d $DB_DATABASE_NAME -i /var/www/2scool-api/dist/migrations_script.sql -I
             echo "Run Database migrations Successfully"
       - run:
           name: Start .NET Application
@@ -116,7 +116,7 @@ workflows:
       - build:
           filters:
             branches:
-              only: master
+              only: dev
   deploy:
     when:
       equal: [ master, << pipeline.git.branch >> ]
