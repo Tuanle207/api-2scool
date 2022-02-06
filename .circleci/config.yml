@@ -50,13 +50,13 @@ jobs:
           working_directory: ~/project
           name: Fill Enviroment Variables in configuration files
           command: |
-            sed -i 's/<USER_NAME>/'"$DROPLET_USER"'/g' 2scool-api.service
-            sed -i 's/<HOST_IP>/'"$DROPLET_IP"'/g' 2scool-api.nginx
-            sed -i 's/<AUTH_URL>/'"$AUTH_URL"'/g' appsettings.json
-            sed -i 's/<CLIENT_URL>/'"$CLIENT_URL"'/g' appsettings.json
-            sed -i 's/<CORS_ORIGINS>/'"$CORS_ORIGINS"'/g' appsettings.json
-            sed -i 's/<REDIRECT_URLS>/'"$REDIRECT_URLS"'/g' appsettings.json
-            sed -i 's/<DB_CONNECTION_STRING>/'"$DB_CONNECTION_STRING"'/g' appsettings.json
+            sed -i "s%<USER_NAME>%$DROPLET_USER%g" 2scool-api.service
+            sed -i "s%<HOST_IP>%$DROPLET_IP%g" 2scool-api.nginx
+            sed -i "s%<AUTH_URL>%$AUTH_URL%g" appsettings.json
+            sed -i "s%<CLIENT_URL>%$CLIENT_URL%g" appsettings.json
+            sed -i "s%<CORS_ORIGINS>%$CORS_ORIGINS%g" appsettings.json
+            sed -i "s%<REDIRECT_URLS>%$REDIRECT_URLS%g" appsettings.json
+            sed -i "s%<DB_CONNECTION_STRING>%$DB_CONNECTION_STRING%g" appsettings.json
             cp 2scool-api.service dist/
             cp 2scool-api.nginx dist/
             \cp -fR appsettings.json dist/
