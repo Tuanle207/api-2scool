@@ -105,7 +105,7 @@ jobs:
           name: Run Database migrations
           command: |
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
-              cd /var/www/2scool-api
+              cd /var/www/2scool-api/dist
               ./migrate-db.sh
             "
             echo "Run Database migrations Successfully"
