@@ -50,8 +50,19 @@ jobs:
           working_directory: ~/project
           name: Fill Enviroment Variables in configuration files
           command: |
+
+            #Fill 2scool-api.service
             sed -i "s%<USER_NAME>%$DROPLET_USER%g" 2scool-api.service
+
+            #Fill 2scool-api.nginx
             sed -i "s%<HOST_IP>%$DROPLET_IP%g" 2scool-api.nginx
+            
+            #Fill migrate-db.sh
+            sed -i "s%<DB_USER>%$DB_USER%g" migrate-db.sh
+            sed -i "s%<DB_PASSWORD>%$DB_PASSWORD%g" migrate-db.sh
+            sed -i "s%<DB_DATABASE_NAME>%$DB_DATABASE_NAME%g" migrate-db.sh
+
+            #Fill appsettings.json
             sed -i "s%<AUTH_URL>%$AUTH_URL%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<CLIENT_URL>%$CLIENT_URL%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<CORS_ORIGINS>%$CORS_ORIGINS%g" src/Scool.HttpApi.Host/appsettings.json
@@ -93,7 +104,10 @@ jobs:
       - run:
           name: Run Database migrations
           command: |
-            sqlcmd -S localhost -U $DB_USER -P $DB_PASSWORD -d $DB_DATABASE_NAME -i /var/www/2scool-api/dist/migrations_script.sql -I
+            /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
+              cd /var/www/2scool-api
+              ./migrate-db.sh
+            "
             echo "Run Database migrations Successfully"
       - run:
           name: Start .NET Application
