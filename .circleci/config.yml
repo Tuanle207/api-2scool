@@ -68,8 +68,11 @@ jobs:
             sed -i "s%<CORS_ORIGINS>%$CORS_ORIGINS%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<REDIRECT_URLS>%$REDIRECT_URLS%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<DB_CONNECTION_STRING>%$DB_CONNECTION_STRING%g" src/Scool.HttpApi.Host/appsettings.json
+
+            #Copy to output folder
             cp 2scool-api.service dist/
             cp 2scool-api.nginx dist/
+            cp migrate-db.sh dist/
             \cp -fR src/Scool.HttpApi.Host/appsettings.json dist/
             echo "Fill Enviroment Variables in configuration files Successfully"
       - run:
