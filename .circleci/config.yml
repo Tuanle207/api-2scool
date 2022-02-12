@@ -111,7 +111,12 @@ jobs:
           command: |
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
               cd /var/www/2scool-api/dist
+<<<<<<< HEAD
               ./Scool.DbMigrator
+=======
+              chmod u+r+x migrate-db.sh
+              ./migrate-db.sh
+>>>>>>> master
             "
             echo "Run Database migrations Successfully"
       - run:
