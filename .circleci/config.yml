@@ -18,7 +18,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - $SSH_FINGERPRINT
+            - "23:05:56:0d:71:32:74:d9:ba:5f:d6:b2:e6:3e:cf:ad"
       - run:
           working_directory: ~/project
           name: Install .NET SDK
