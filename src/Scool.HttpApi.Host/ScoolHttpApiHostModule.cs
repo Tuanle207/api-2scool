@@ -190,7 +190,7 @@ namespace Scool
                                 .Select(o => o.RemovePostFix("/"))
                                 .ToArray()
                         )
-                        .SetIsOriginAllowedToAllowWildcardSubdomains()
+                        .SetIsOriginAllowed(origin => true)
                         //.WithAbpExposedHeaders()
                         //.SetIsOriginAllowedToAllowWildcardSubdomains()
                         .AllowAnyHeader()
