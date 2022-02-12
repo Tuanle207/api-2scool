@@ -6,5 +6,6 @@ namespace Scool.DataSeeds.Model
         public string Description { get; set; }
         public string Note { get; set; }
         public int Point { get; set; }
+        public string Type { get; set; }
     }
 }

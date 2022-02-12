@@ -35,6 +35,13 @@ namespace Scool.DataSeeds
             var path = GetJsonDataFilePath("regulations-data.json");
             var criterias = ParseDataFromJsonFile<List<CriteriaDto>>(path);
 
+            if (await _criteriasRepo.AnyAsync(x => true) && await _regulationsRep.AnyAsync(x => true))
+            {
+                return;
+            }
+
+            _logger.LogInformation("Seeding criterias and regulations");
+
             foreach (var item in criterias)
             {
                 var criteria = await _criteriasRepo.InsertAsync(new Criteria
@@ -48,7 +55,8 @@ namespace Scool.DataSeeds
                     {
                         DisplayName = reg.RegulationName,
                         Point = reg.Point,
-                        CriteriaId = criteria.Id
+                        CriteriaId = criteria.Id,
+                        Type = reg.Type
                     });
                 }
             }
