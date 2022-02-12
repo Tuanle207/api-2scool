@@ -7,8 +7,10 @@ namespace Scool.DataSeeds
     {
         public static string GetJsonDataFilePath(string fileName)
         {
+            string basePath = System.IO.Path.GetDirectoryName( 
+                    System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase).Substring(6);
             string path = Path.Combine(
-                Directory.GetCurrentDirectory(),
+                basePath,
                 "DataSeeds",
                 fileName);
 
