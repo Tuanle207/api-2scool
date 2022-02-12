@@ -55,7 +55,7 @@ jobs:
             sed -i "s%<DB_DATABASE_NAME>%$DB_DATABASE_NAME%g" migrate-db.sh
 
             #Fill appsettings.json
-            sed -i "s%<APP_URL>%$AUTH_URL%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<APP_URL>%$APP_URL%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<AUTH_URL>%$AUTH_URL%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<CLIENT_URL>%$CLIENT_URL%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%<CORS_ORIGINS>%$CORS_ORIGINS%g" src/Scool.HttpApi.Host/appsettings.json
