@@ -30,20 +30,12 @@ jobs:
             sudo apt-get install -y apt-transport-https
             sudo apt-get update
             sudo apt-get install -y dotnet-sdk-5.0
-            dotnet tool install --global dotnet-ef
       - run:
           working_directory: ~/project
           name: Build .Net Application for release
           command: |
             dotnet publish -c Release -o dist
             echo "Publish Successfully"
-      - run:
-          working_directory: ~/project
-          name: Generate SQL script for database migration
-          command: |
-            cd src/Scool.EntityFrameworkCore.DbMigrations
-            ~/.dotnet/tools/dotnet-ef migrations script -o ../../dist/migrations_script.sql
-            echo "Generate SQL script for database migration Successfully"
       # Get ENV Variables from CircleCI and fill them into configuration files
       # Then copy them to distribution directory
       - run:
