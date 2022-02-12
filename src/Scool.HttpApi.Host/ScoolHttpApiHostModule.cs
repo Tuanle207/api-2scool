@@ -184,12 +184,7 @@ namespace Scool
                 options.AddPolicy("AllowAll", builder =>
                 {
                     builder
-                        .WithOrigins(
-                            configuration["App:CorsOrigins"]
-                                .Split(",", StringSplitOptions.RemoveEmptyEntries)
-                                .Select(o => o.RemovePostFix("/"))
-                                .ToArray()
-                        )
+                        .AllowAnyOrigin()
                         //.WithAbpExposedHeaders()
                         //.SetIsOriginAllowedToAllowWildcardSubdomains()
                         .AllowAnyHeader()
