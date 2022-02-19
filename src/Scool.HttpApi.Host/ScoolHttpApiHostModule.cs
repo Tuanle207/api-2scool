@@ -188,8 +188,7 @@ namespace Scool
                     builder
                         .WithOrigins(
                             configuration["App:CorsOrigins"]
-                                .Split(",", StringSplitOptions.RemoveEmptyEntries)
-                                .Select(o => o.RemovePostFix("/"))
+                                .Split(",")
                                 .ToArray()
                         )
                         .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
