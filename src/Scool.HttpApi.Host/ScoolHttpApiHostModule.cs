@@ -192,12 +192,13 @@ namespace Scool
                                 .Select(o => o.RemovePostFix("/"))
                                 .ToArray()
                         )
-                        .SetIsOriginAllowed(origin => true)
+                        .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
+                        // .SetIsOriginAllowed(origin => true)
                         //.WithAbpExposedHeaders()
                         //.SetIsOriginAllowedToAllowWildcardSubdomains()
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
-                        // .AllowCredentials();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
         }
