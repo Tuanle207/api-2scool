@@ -46,8 +46,8 @@ namespace Scool.ApplicationServices
             IRepository<LessonRegisterPhotos, Guid> lePhotoRepo,
             ICurrentUser currentUser,
             IFileHandler fileHandler,
-            IGuidGenerator guidGenerator
-, IRepository<AppUser, Guid> usersRepo) : base(leRepo)
+            IGuidGenerator guidGenerator, 
+            IRepository<AppUser, Guid> usersRepo) : base(leRepo)
         {
             _leRepo = leRepo;
             _lePhotoRepo = lePhotoRepo;

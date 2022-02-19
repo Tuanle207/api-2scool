@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Guids;
@@ -14,26 +12,40 @@ namespace Scool.Application.FileHandler
 {
     public class FileHandler : IFileHandler, IScopedDependency
     {
+        private static string BASE_PATH = null;
+        private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
         private readonly ICurrentUser _currentUser;
         private readonly IHttpContextAccessor _httpContext;
         private readonly IGuidGenerator _guidGenerator;
 
         public FileHandler(
+            IConfiguration config,
             IWebHostEnvironment env,
             ICurrentUser currentUser,
             IHttpContextAccessor httpContext,
             IGuidGenerator guidGenerator)
         {
+            _config = config;
             _env = env;
             _currentUser = currentUser;
             _httpContext = httpContext;
             _guidGenerator = guidGenerator;
         }
 
+        public string GetBasePath()
+        {
+            if (string.IsNullOrEmpty(BASE_PATH))
+            {
+                string basePathFromConfig = _config["FileUploadBasePath"];
+                BASE_PATH = string.IsNullOrEmpty(basePathFromConfig) ? _env.WebRootPath : basePathFromConfig;
+            }
+            return BASE_PATH;
+        }
+
         public async Task<string> SaveFileAsync(IFormFile file, string groupName = "photo")
         {
-            var basePath = _env.WebRootPath;
+            var basePath = GetBasePath();
             var fileName = $"{_guidGenerator.Create()}-{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}{Path.GetExtension(file.FileName)}";
             if (file != null)
             {
@@ -44,13 +56,13 @@ namespace Scool.Application.FileHandler
                 }
             }
 
-            var photoUrl = $"/photo/{fileName}";
+            var photoUrl = $"/{groupName}/{fileName}";
             return photoUrl;
         }
 
         public void RemoveFile(string path, string groupName = "photo")
         {
-            var basePath = _env.WebRootPath;
+            var basePath = GetBasePath();
             var decodeUrl = path.Split('/');
             if (decodeUrl.Length == 2)
             {
@@ -58,7 +70,6 @@ namespace Scool.Application.FileHandler
                 var filePath = Path.Combine(basePath, groupName, fileName);
                 File.Delete(filePath);
             }
-
         }
     }
 }

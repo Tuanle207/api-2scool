@@ -3,7 +3,7 @@ Description=2Scool .NET Web API App running on Ubuntu
 
 [Service]
 WorkingDirectory=/var/www/2scool-api/dist
-ExecStart=/usr/bin/dotnet /var/www/2scool-api/dist/Scool.HttpApi.Host.dll --urls http://0.0.0.0:5001
+ExecStart=/usr/bin/dotnet /var/www/2scool-api/dist/Scool.HttpApi.Host.dll --urls http://0.0.0.0:5002
 Restart=always
 # Restart service after 10 seconds if the dotnet service crashes:
 RestartSec=10

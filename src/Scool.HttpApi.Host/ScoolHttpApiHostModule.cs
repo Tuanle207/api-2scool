@@ -31,6 +31,8 @@ using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using IdentityServer4.Extensions;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Http;
 
 namespace Scool
 {
@@ -217,6 +219,7 @@ namespace Scool
         {
             var app = context.GetApplicationBuilder();
             var env = context.GetEnvironment();
+            var config = context.GetConfiguration();
 
             if (env.IsDevelopment())
             {
@@ -231,7 +234,28 @@ namespace Scool
             }
 
             app.UseCorrelationId();
-            app.UseStaticFiles();
+
+            if (env.IsDevelopment())
+            {
+                app.UseStaticFiles();
+            }
+            else
+            {
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new PhysicalFileProvider(config["FileUploadBasePath"]),
+                    RequestPath = "",
+                    OnPrepareResponse = ctx =>
+                    {
+                        ctx.Context.Response.Headers.Append(
+                            "Cache-Control", $"public, max-age=604800");
+                    },
+                    // ContentTypeProvider = FileExtensionContentTypeProviderBuilder.Build()
+                });
+            }
+
+            
+
             app.UseRouting();
             app.UseCors("AllowAll");
             app.UseAuthentication();
