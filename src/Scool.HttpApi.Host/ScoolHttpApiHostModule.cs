@@ -50,7 +50,7 @@ namespace Scool
     )]
     public class ScoolHttpApiHostModule : AbpModule
     {
-        private const string DefaultCorsPolicyName = "Default";
+        private const string CorsPolicyName = "AllowCORS";
 
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
@@ -183,7 +183,7 @@ namespace Scool
         {
             context.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", builder =>
+                options.AddPolicy(CorsPolicyName, builder =>
                 {
                     builder
                         .WithOrigins(
@@ -191,10 +191,8 @@ namespace Scool
                                 .Split(",")
                                 .ToArray()
                         )
+                        .SetIsOriginAllowed(origin => true)
                         .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
-                        // .SetIsOriginAllowed(origin => true)
-                        //.WithAbpExposedHeaders()
-                        //.SetIsOriginAllowedToAllowWildcardSubdomains()
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
@@ -257,7 +255,7 @@ namespace Scool
             
 
             app.UseRouting();
-            app.UseCors("AllowAll");
+            app.UseCors(CorsPolicyName);
             app.UseAuthentication();
             app.UseJwtTokenMiddleware();
 
