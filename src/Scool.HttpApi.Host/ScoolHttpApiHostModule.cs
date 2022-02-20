@@ -33,6 +33,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using IdentityServer4.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Scool
 {
@@ -60,7 +61,7 @@ namespace Scool
             ConfigureBundles();
             ConfigureUrls(configuration);
             ConfigureConventionalControllers();
-            ConfigureAuthentication(context, configuration);
+            ConfigureAuthentication(context, configuration, hostingEnvironment);
             ConfigureLocalization();
             ConfigureVirtualFileSystem(context);
             ConfigureCors(context, configuration);
@@ -123,7 +124,7 @@ namespace Scool
             });
         }
 
-        private void ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration)
+        private void ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment env)
         {
             context.Services.AddAuthentication()
                 .AddJwtBearer(options =>
@@ -131,8 +132,12 @@ namespace Scool
                     options.Authority = configuration["AuthServer:Authority"];
                     options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                     options.Audience = "Scool";
-                    // TODO: set this temporary for dev
-                    options.TokenValidationParameters.ValidateIssuer = false;
+                    if (env.IsDevelopment())
+                    {
+                        options.TokenValidationParameters.ValidateIssuer = false;
+                    } else {
+                        options.TokenValidationParameters.ValidateIssuer = true;
+                    }
                     options.BackchannelHttpHandler = new HttpClientHandler
                     {
                         ServerCertificateCustomValidationCallback =
@@ -206,6 +211,7 @@ namespace Scool
             Configure<AbpAntiForgeryOptions>(options =>
             {
                 options.AutoValidate = false;
+                options.TokenCookie.Expiration = TimeSpan.FromDays(1);
                 //options.TokenCookie.Expiration = TimeSpan.FromDays(365);
                 // options.AutoValidateIgnoredHttpMethods.Remove("GET");
                 //options.AutoValidateFilter =
