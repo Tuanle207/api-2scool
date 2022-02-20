@@ -189,19 +189,18 @@ namespace Scool
             context.Services.AddCors(options =>
             {
                 options.AddPolicy(CorsPolicyName, builder =>
-                {
-                    builder
-                        .WithOrigins(
-                            configuration["App:CorsOrigins"]
-                                .Split(",")
-                                .ToArray()
-                        )
-                        .SetIsOriginAllowed(origin => true)
-                        .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                });
+                    builder.WithOrigins(
+                        configuration["App:CorsOrigins"]
+                            .Split(",")
+                            .ToArray()
+                    )
+                    .SetIsOriginAllowed(origin => true)
+                    .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .Build()
+                );
             });
         }
 
