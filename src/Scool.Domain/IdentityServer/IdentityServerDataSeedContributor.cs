@@ -143,7 +143,7 @@ namespace Scool.IdentityServer
             var configurationSection = _configuration.GetSection("IdentityServer:Clients");
 
 
-            //Console Test / Angular Client
+            // App Client 1
             var consoleAndAngularClientId = configurationSection["Scool_App:ClientId"];
             if (!consoleAndAngularClientId.IsNullOrWhiteSpace())
             {
@@ -160,7 +160,24 @@ namespace Scool.IdentityServer
                     corsOrigins: new[] { webClientRootUrl.RemovePostFix("/") }
                 );
             }
-            
+
+            // App Client 2
+            var appClient2ClientId = configurationSection["Scool_App_Main:ClientId"];
+            if (!appClient2ClientId.IsNullOrWhiteSpace())
+            {
+                var webClientRootUrl = configurationSection["Scool_App_Main:RootUrl"]?.TrimEnd('/');
+
+                await CreateClientAsync(
+                    name: appClient2ClientId,
+                    scopes: commonScopes,
+                    grantTypes: new[] { "password", "client_credentials", "authorization_code" },
+                    secret: (configurationSection["Scool_App_Main:ClientSecret"] ?? "1q2w3e*").Sha256(),
+                    requireClientSecret: false,
+                    redirectUri: webClientRootUrl,
+                    postLogoutRedirectUri: webClientRootUrl,
+                    corsOrigins: new[] { webClientRootUrl.RemovePostFix("/") }
+                );
+            }
             
             
             // Swagger Client
