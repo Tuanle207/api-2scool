@@ -189,6 +189,7 @@ namespace Scool
             context.Services.AddCors(options =>
             {
                 options.AddPolicy(CorsPolicyName, builder =>
+                {
                     builder.WithOrigins(
                         configuration["App:CorsOrigins"]
                             .Split(",")
@@ -198,9 +199,8 @@ namespace Scool
                     .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials()
-                    .Build()
-                );
+                    .AllowCredentials();
+                });
             });
         }
 
