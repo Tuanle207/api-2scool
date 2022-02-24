@@ -178,6 +178,24 @@ namespace Scool.IdentityServer
                     corsOrigins: new[] { webClientRootUrl.RemovePostFix("/") }
                 );
             }
+
+            // App test deployment
+            var appClient3ClientId = configurationSection["Scool_App_Test_Deployment:ClientId"];
+            if (!appClient3ClientId.IsNullOrWhiteSpace())
+            {
+                var webClientRootUrl = configurationSection["Scool_App_Test_Deployment:RootUrl"]?.TrimEnd('/');
+
+                await CreateClientAsync(
+                    name: appClient3ClientId,
+                    scopes: commonScopes,
+                    grantTypes: new[] { "password", "client_credentials", "authorization_code" },
+                    secret: (configurationSection["Scool_App_Test_Deployment:ClientSecret"] ?? "1q2w3e*").Sha256(),
+                    requireClientSecret: false,
+                    redirectUri: webClientRootUrl,
+                    postLogoutRedirectUri: webClientRootUrl,
+                    corsOrigins: new[] { webClientRootUrl.RemovePostFix("/") }
+                );
+            }
             
             
             // Swagger Client
