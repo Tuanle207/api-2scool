@@ -190,12 +190,13 @@ namespace Scool
             {
                 options.AddPolicy(CorsPolicyName, builder =>
                 {
-                    builder.WithOrigins(
-                        configuration["App:CorsOrigins"]
-                            .Split(",")
-                            .ToArray()
-                    )
-                    .SetIsOriginAllowed(origin => true)
+                    builder
+                    .AllowAnyOrigin()
+                    // .WithOrigins(
+                    //     configuration["App:CorsOrigins"]
+                    //         .Split(",")
+                    //         .ToArray()
+                    // )
                     .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
                     .AllowAnyHeader()
                     .AllowAnyMethod()
