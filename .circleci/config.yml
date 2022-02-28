@@ -112,12 +112,8 @@ jobs:
             /usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP "
               cd /var/www/2scool-api/dist
               cp 2scool-api.service /etc/systemd/system/2scool-api.service
-              cp 2scool-api.nginx /etc/nginx/sites-available/2scool-api
-              ln -sf /etc/nginx/sites-available/2scool-api /etc/nginx/sites-enabled/
-              nginx -t
               systemctl enable 2scool-api.service
               systemctl start 2scool-api.service
-              systemctl restart nginx
             "
             echo "Start .NET Application Successfully"
 workflows:
