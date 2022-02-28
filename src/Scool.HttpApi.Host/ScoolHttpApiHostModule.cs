@@ -199,8 +199,7 @@ namespace Scool
                     // )
                     .SetPreflightMaxAge(new TimeSpan(24, 0, 0))
                     .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                    .AllowAnyMethod();
                 });
             });
         }
