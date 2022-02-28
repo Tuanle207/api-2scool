@@ -25,14 +25,11 @@ namespace Scool.ApplicationServices
     public class StatisticsAppService : ScoolAppService, IStatisticsAppService
     {
         private readonly IRepository<DcpReport, Guid> _dcpReportsRepo;
-        private readonly IRepository<DcpClassReport, Guid> _dcpClassReportsRepo;
         private readonly ScoolDbContext _context;
 
-        public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo, 
-            IRepository<DcpClassReport, Guid> dcpClassReportsRepo, ScoolDbContext context)
+        public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo, ScoolDbContext context)
         {
             _dcpReportsRepo = dcpReportsRepo;
-            _dcpClassReportsRepo = dcpClassReportsRepo;
             _context = context;
         }
 
