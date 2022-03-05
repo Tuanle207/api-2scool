@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Scool.Application.Contracts.Dtos;
 using Scool.Application.Dtos;
 using Scool.Domain.Common;
 

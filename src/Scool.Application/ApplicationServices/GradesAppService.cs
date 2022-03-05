@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Scool.Application.Contracts.Dtos;
 using Scool.Application.Dtos;
 using Scool.Application.IApplicationServices;
 using Scool.Domain.Common;

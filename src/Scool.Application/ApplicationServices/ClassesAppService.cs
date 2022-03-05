@@ -35,7 +35,7 @@ namespace Scool.Application.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             var query = _classRepo.Filter(input.Filter);
-            query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
+            query = query.OrderBy(x => x.Name);
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Course)
                     .Include(e => e.FormTeacher)
@@ -63,6 +63,7 @@ namespace Scool.Application.ApplicationServices
         public async Task<PagingModel<ClassForSimpleListDto>> GetSimpleListAsync()
         {
             var items = await _classRepo
+                .OrderBy(x => x.Name)
                 .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
                 .ToListAsync();
 

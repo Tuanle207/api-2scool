@@ -1,5 +1,4 @@
-﻿using Scool.Application.Contracts.Dtos;
-using Scool.Application.Dtos;
+﻿using Scool.Application.Dtos;
 using Scool.Infrastructure.ApplicationServices;
 using Scool.Infrastructure.Common;
 using System;

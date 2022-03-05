@@ -46,7 +46,7 @@ namespace Scool.Application.FileHandler
         public async Task<string> SaveFileAsync(IFormFile file, string groupName = "photo")
         {
             var basePath = GetBasePath();
-            var fileName = $"{_guidGenerator.Create()}-{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}{Path.GetExtension(file.FileName)}";
+            var fileName = $"{_guidGenerator.Create()}-{DateTime.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss")}{Path.GetExtension(file.FileName)}";
             if (file != null)
             {
                 var path = Path.Combine(basePath, groupName, fileName);

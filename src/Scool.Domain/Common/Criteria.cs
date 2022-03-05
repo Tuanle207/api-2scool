@@ -19,6 +19,7 @@ namespace Scool.Domain.Common
         public Criteria()
         {
             Regulations = new List<Regulation>();
+            CreationTime = DateTime.UtcNow;
         }
     }
 }
