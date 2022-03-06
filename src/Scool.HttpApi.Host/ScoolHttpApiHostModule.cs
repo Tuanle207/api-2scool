@@ -34,6 +34,9 @@ using IdentityServer4.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Scool.Users;
+using Volo.Abp.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace Scool
 {

@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Scool.Application.Dtos;
+﻿using Scool.Application.Dtos;
 using Scool.Domain.Views;
-using Scool.Dtos;
 using Scool.Infrastructure.Common;
 using System.IO;
 using System.Threading.Tasks;

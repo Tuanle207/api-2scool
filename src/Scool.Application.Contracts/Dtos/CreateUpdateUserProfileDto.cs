@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Scool.Dtos
+namespace Scool.Application.Dtos
 {
     public class CreateUpdateUserProfileDto
     {

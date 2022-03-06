@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Scool.Application.Dtos;
 using Scool.Domain.Common;
-using Scool.Dtos;
 using Scool.Users;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,7 +45,8 @@ namespace Scool.AutoMapperProfiles
                 PhoneNumber = src.PhoneNumber,
                 PhoneNumberConfirmed = src.PhoneNumberConfirmed,
                 ListRoleId = src.Roles.Select(x => x.RoleId).ToList(),
-                Roles = new List<RoleForSimpleListDto>()
+                Roles = new List<RoleForSimpleListDto>(),
+                ConcurrencyStamp = src.ConcurrencyStamp
             };
 
             return result;

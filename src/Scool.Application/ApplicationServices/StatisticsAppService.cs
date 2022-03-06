@@ -7,7 +7,6 @@ using Scool.Application.IApplicationServices;
 using Scool.Application.Permissions;
 using Scool.Domain.Common;
 using Scool.Domain.Views;
-using Scool.Dtos;
 using Scool.EntityFrameworkCore;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Extensions;

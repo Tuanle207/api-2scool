@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Dtos
+namespace Scool.Application.Dtos
 {
     public class UserDto : EntityDto<Guid>
     {
@@ -17,5 +14,6 @@ namespace Scool.Dtos
         public bool PhoneNumberConfirmed { get; set; }
         public List<RoleForSimpleListDto> Roles { get; set; }
         public List<Guid> ListRoleId { get; set; }
+        public string ConcurrencyStamp { get; set; }
     }
 }

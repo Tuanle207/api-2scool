@@ -19,9 +19,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Scool.Users;
 using Scool.Infrastructure.Linq;
-using Scool.Dtos;
 using IdentityRole = Volo.Abp.Identity.IdentityRole;
 using IdentityUser = Volo.Abp.Identity.IdentityUser;
+using Volo.Abp.SettingManagement;
+using Volo.Abp.Identity.Settings;
 
 namespace Scool.ApplicationServices
 {
@@ -29,22 +30,34 @@ namespace Scool.ApplicationServices
     [ExposeServices(typeof(IIdentityUserAppService), typeof(IdentityUserAppService), typeof(AppIdentityUserAppService))]
     public class AppIdentityUserAppService : IdentityUserAppService, IAppIdentityUserAppService
     {
-        private readonly IdentityUserManager _identityUserManager;
+        private static readonly int PASSWORD_REQUIRED_MIN_LENGTH = 6;
+        private static readonly bool PASSWORD_REQUIRED_DIGIT = false;
+        private static readonly bool PASSWORD_REQUIRED_UPPERCASE = false;
+        private static readonly bool PASSWORD_REQUIRED_LOWERCASE = false;
+        private static readonly bool PASSWORD_REQUIRED_NON_ALPHANUMERIC = false;
+        private static readonly int PASSWORD_REQUIRED_UNIQUE_CHARACTERS = 0;
+
+        private readonly ISettingManager _settingManager;
         private readonly IIdentityUserRepository _identityUserRepository;
         private readonly IIdentityRoleRepository _identityRoleRepository;
         private readonly IRepository<UserProfile, Guid> _userProfilesRepository;
         private readonly IRepository<AppUser, Guid> _userRepository;
 
-        public AppIdentityUserAppService(IdentityUserManager identityUserManager, IIdentityUserRepository identityUserRepository,
-            IIdentityRoleRepository identityRoleRepository, IOptions<IdentityOptions> identityOptions,
-                IRepository<UserProfile, Guid> userProfilesRepository, IRepository<AppUser, Guid> userRepository)
-                : base(identityUserManager, identityUserRepository, identityRoleRepository, identityOptions)
+        public AppIdentityUserAppService(
+            IdentityUserManager identityUserManager, 
+            IIdentityUserRepository identityUserRepository,
+            IIdentityRoleRepository identityRoleRepository, 
+            IOptions<IdentityOptions> identityOptions,
+            IRepository<UserProfile, Guid> userProfilesRepository,
+            IRepository<AppUser, Guid> userRepository,
+            ISettingManager settingManager)
+        : base(identityUserManager, identityUserRepository, identityRoleRepository, identityOptions)
         {
-            _identityUserManager = identityUserManager;
             _identityUserRepository = identityUserRepository;
             _identityRoleRepository = identityRoleRepository;
             _userProfilesRepository = userProfilesRepository;
             _userRepository = userRepository;
+            _settingManager = settingManager;
         }
 
         public async override Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
@@ -57,6 +70,7 @@ namespace Scool.ApplicationServices
                 input.RoleNames = roles;
             }
 
+            await SetAccountOptionsAsync();
             var result = await base.CreateAsync(input);
             await CurrentUnitOfWork.SaveChangesAsync();
 
@@ -72,6 +86,12 @@ namespace Scool.ApplicationServices
             await _userProfilesRepository.InsertAsync(userProfile);
 
             return result;
+        }
+
+        public override async Task<IdentityUserDto> UpdateAsync(Guid id, IdentityUserUpdateDto input)
+        {
+            await SetAccountOptionsAsync();
+            return await base.UpdateAsync(id, input);
         }
 
         [HttpGet("/api/app/app-identity-user/user-for-task-assignment")]
@@ -130,6 +150,34 @@ namespace Scool.ApplicationServices
             }
 
             return new PagingModel<UserDto>(users, totalCount, pageIndex, pageSize);
+        }
+
+        private async Task SetAccountOptionsAsync()
+        {
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequiredLength,
+                PASSWORD_REQUIRED_MIN_LENGTH.ToString()
+            );
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequireDigit,
+                PASSWORD_REQUIRED_DIGIT.ToString()
+            );
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequireUppercase,
+                PASSWORD_REQUIRED_UPPERCASE.ToString()
+            );
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequireLowercase,
+                PASSWORD_REQUIRED_LOWERCASE.ToString()
+            );
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequireNonAlphanumeric,
+                PASSWORD_REQUIRED_NON_ALPHANUMERIC.ToString()
+            );
+            await _settingManager.SetForCurrentTenantAsync(
+                IdentitySettingNames.Password.RequiredUniqueChars,
+                PASSWORD_REQUIRED_UNIQUE_CHARACTERS.ToString()
+            );
         }
     }
 }

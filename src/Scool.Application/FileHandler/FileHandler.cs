@@ -15,8 +15,6 @@ namespace Scool.Application.FileHandler
         private static string BASE_PATH = null;
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
-        private readonly ICurrentUser _currentUser;
-        private readonly IHttpContextAccessor _httpContext;
         private readonly IGuidGenerator _guidGenerator;
 
         public FileHandler(
@@ -28,8 +26,6 @@ namespace Scool.Application.FileHandler
         {
             _config = config;
             _env = env;
-            _currentUser = currentUser;
-            _httpContext = httpContext;
             _guidGenerator = guidGenerator;
         }
 

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 
-namespace Scool.IApplicationServices
+namespace Scool.Application.IApplicationServices
 {
     public interface IDataImportAppService : IApplicationService
     {
