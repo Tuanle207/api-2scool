@@ -12,6 +12,7 @@ using Scool.Application.Dtos;
 using Scool.Infrastructure.Common;
 using Scool.Application.Permissions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Scool.Application.ApplicationServices
 {
@@ -51,6 +52,16 @@ namespace Scool.Application.ApplicationServices
             var totalCount = await query.CountAsync();
 
             return new PagingModel<CourseForSimpleListDto>(items, totalCount, pageIndex, pageSize);
+        }
+
+        [Authorize(CoursesPermissions.GetAll)]
+        [HttpGet("api/app/courses/IsNameAlreadyUsed")]
+        public async Task<bool> IsNameAlreadyUsedAsync([FromQuery] Guid? id, [FromQuery] string name)
+        {
+            var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();
+            return await _courseRepo.AsNoTracking()
+                .Where(x => x.Id != id && x.Name.ToLower() == lowercaseName)
+                .AnyAsync();
         }
     }
 }

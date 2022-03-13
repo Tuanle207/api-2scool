@@ -8,7 +8,7 @@ namespace Scool.Application.ObjectExtentions
 {
     public static class IdentityUserCreateDtoExt
     {
-        public const string ClassId = "ClassId";
+        public const string StudentId = "StudentId";
         public const string Dob = "Dob";
     }
 }

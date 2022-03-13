@@ -13,6 +13,8 @@ namespace Scool.Domain.Common
         public DateTime? Dob { get; set; }
         public string Photo { get; set; }
         public Guid? ClassId { get; set; }
+        public Guid? StudentId { get; set; }
         public Class Class { get; set; }
+        public Student Student { get; set; }
     }
 }

@@ -14,5 +14,9 @@ namespace Scool.Application.IApplicationServices
         Task<PagingModel<UserForTaskAssignmentDto>> GetUserForTaskAssignment(Guid? classId);
 
         Task<PagingModel<UserDto>> PostPaging(PageInfoRequestDto input);
+
+        Task<bool> IsEmailAlreadyUsed(Guid? userId, string email);
+
+        Task<string> DoesStudentHaveAccountAlready(Guid studentId);
     }
 }

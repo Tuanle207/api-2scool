@@ -15,5 +15,6 @@ namespace Scool.Application.IApplicationServices
      >
     {
         Task<PagingModel<CourseForSimpleListDto>> GetSimpleListAsync(PageInfoRequestDto input);
+        Task<bool> IsNameAlreadyUsedAsync(Guid? id, string name);
     }
 }

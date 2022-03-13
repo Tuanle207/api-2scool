@@ -75,5 +75,14 @@ namespace Scool.Application.ApplicationServices
 
             return result;
         }
+
+        [HttpGet("api/app/classes/is-name-already-used")]
+        public async Task<bool> IsNameAlreadyUsedAsync([FromQuery] Guid? id, [FromQuery] string name)
+        {
+            var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();
+            return await _classRepo.AsNoTracking()
+                .Where(x => x.Id != id && x.Name.ToLower() == lowercaseName)
+                .AnyAsync();
+        }
     }
 }

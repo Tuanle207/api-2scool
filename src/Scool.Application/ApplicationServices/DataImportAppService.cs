@@ -232,7 +232,7 @@ namespace Scool.ApplicationServices
                 {
                     var formatClasses = new List<Class>();
                     var grades = (await _gradesAppService.GetSimpleListAsync()).Items;
-                    var teachers = await _teacherAppService.GetSimpleListAsync();
+                    var teachers = (await _teacherAppService.GetSimpleListAsync()).Items;
                     var course = _coursesRepository.OrderByDescending(x => x.StartTime)
                         .FirstOrDefault();
 

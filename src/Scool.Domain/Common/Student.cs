@@ -10,5 +10,7 @@ namespace Scool.Domain.Common
         public Class Class { get; set; }
         public DateTime Dob { get; set; }
         public string ParentPhoneNumber { get; set; }
+        public Guid? UserProfileId { get; set; }
+        public UserProfile UserProfile { get; set; }
     }
 }

@@ -46,6 +46,7 @@ namespace Scool.EntityFrameworkCore
             builder.Entity<UserProfile>(b =>
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(UserProfile), ScoolConsts.DbSchema);
+
                 b.ConfigureByConvention();
             });
 
@@ -100,6 +101,11 @@ namespace Scool.EntityFrameworkCore
             builder.Entity<Student>(b =>
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(Student), ScoolConsts.DbSchema);
+
+                b.HasOne(b => b.UserProfile)
+                    .WithOne(x => x.Student)
+                    .HasForeignKey<Student>(f => f.UserProfileId);
+
                 b.ConfigureByConvention();
             });
 

@@ -27,7 +27,7 @@ namespace Scool
                  */
 
                 ObjectExtensionManager.Instance.AddOrUpdateProperty<IdentityUserCreateDto, Guid?>(
-                    IdentityUserCreateDtoExt.ClassId, opt => opt.DefaultValue = null);
+                    IdentityUserCreateDtoExt.StudentId, opt => opt.DefaultValue = null);
 
                 ObjectExtensionManager.Instance.AddOrUpdateProperty<IdentityUserCreateDto, DateTime?>(
                    IdentityUserCreateDtoExt.Dob, opt => opt.DefaultValue = null);

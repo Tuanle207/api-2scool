@@ -62,13 +62,14 @@ namespace Scool.ApplicationServices
 
         public async override Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
         {
-            var classIdRaw = input.ExtraProperties.GetOrDefault(IdentityUserCreateDtoExt.ClassId);
+            var studentIdRaw = input.ExtraProperties.GetOrDefault(IdentityUserCreateDtoExt.StudentId);
 
-            if (classIdRaw != null)
+            if (studentIdRaw != null)
             {
                 string[] roles = { AppRole.DcpReporterStudent, AppRole.LessonsRegisterReporter };
                 input.RoleNames = roles;
             }
+            input.UserName = ParseUserNameFromEmail(input.Email);
 
             await SetAccountOptionsAsync();
             var result = await base.CreateAsync(input);
@@ -79,8 +80,8 @@ namespace Scool.ApplicationServices
                 UserId = result.Id,
                 DisplayName = input.Name,
                 PhoneNo = input.PhoneNumber,
-                ClassId = classIdRaw != null ? new Guid(classIdRaw.ToString()) : null,
-                Dob = input.ExtraProperties.GetOrDefault(IdentityUserCreateDtoExt.Dob) as DateTime?
+                StudentId = studentIdRaw != null ? new Guid(studentIdRaw.ToString()) : null,
+                Dob = input.ExtraProperties.GetOrDefault(IdentityUserCreateDtoExt.Dob) as DateTime?,
             };
 
             await _userProfilesRepository.InsertAsync(userProfile);
@@ -110,16 +111,17 @@ namespace Scool.ApplicationServices
         {
             int pageSize = input.PageSize > 0 ? input.PageSize : 10;
             int pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
+            string name = input.Filter.FirstOrDefault(x => x.Key == "Name")?.Value.ToLower() ?? string.Empty;
 
-            IQueryable<AppUser> query = _userRepository.AsNoTracking()
-                .Filter(input.Filter);
+            IQueryable<IdentityUser> query = _identityUserRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Where(x => x.Name.ToLower().Contains(name))
+                .OrderByDescending(x => x.CreationTime);
 
             int totalCount = await query.CountAsync();
 
             // Users
-            IList<UserDto> users = await _identityUserRepository.ToEfCoreRepository()
-                .AsNoTracking()
-                .OrderByDescending(x => x.CreationTime)
+            IList<UserDto> users = await query
                 .Page(pageIndex, pageSize)
                 .Include(x => x.Roles)
                 .Select(x => ObjectMapper.Map<IdentityUser, UserDto>(x))
@@ -152,6 +154,33 @@ namespace Scool.ApplicationServices
             return new PagingModel<UserDto>(users, totalCount, pageIndex, pageSize);
         }
 
+        [HttpGet("api/app/app-identity-user/is-email-already-used")]
+        public Task<bool> IsEmailAlreadyUsed([FromQuery] Guid? userId, [FromQuery] string email)
+        {
+            var lowercaseEmail = string.IsNullOrEmpty(email) ? string.Empty : email.ToLower();
+            return _identityUserRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Where(x => x.Email.ToLower() == lowercaseEmail)
+                .Where(x => x.Id != userId)
+                .AnyAsync();
+        }
+
+        [HttpGet("api/app/app-identity-user/does-student-have-account-already")]
+        public async Task<string> DoesStudentHaveAccountAlready([FromQuery] Guid studentId)
+        {
+            var userProfile = await _userProfilesRepository.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.StudentId == studentId);
+            if (userProfile is null)
+            {
+                return string.Empty;
+            }
+            return await _identityUserRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Where(x => x.Id == userProfile.UserId)
+                .Select(x => x.Email)
+                .FirstOrDefaultAsync() ?? string.Empty;
+        }
+
         private async Task SetAccountOptionsAsync()
         {
             await _settingManager.SetForCurrentTenantAsync(
@@ -178,6 +207,15 @@ namespace Scool.ApplicationServices
                 IdentitySettingNames.Password.RequiredUniqueChars,
                 PASSWORD_REQUIRED_UNIQUE_CHARACTERS.ToString()
             );
+        }
+
+        private string ParseUserNameFromEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email) || (!string.IsNullOrEmpty(email) && !email.Contains("@")))
+            {
+                return string.Empty;
+            }
+            return email.Replace('@', '.');
         }
     }
 }
