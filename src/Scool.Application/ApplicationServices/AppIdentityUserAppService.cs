@@ -4,9 +4,7 @@ using Scool.Application.ObjectExtentions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Identity;
 using Volo.Abp.Domain.Repositories;
@@ -112,11 +110,17 @@ namespace Scool.ApplicationServices
             int pageSize = input.PageSize > 0 ? input.PageSize : 10;
             int pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             string name = input.Filter.FirstOrDefault(x => x.Key == "Name")?.Value.ToLower() ?? string.Empty;
+            string roleFilter = input.Filter.FirstOrDefault(x => x.Key == "RoleId")?.Value ?? string.Empty;
 
             IQueryable<IdentityUser> query = _identityUserRepository.ToEfCoreRepository()
                 .AsNoTracking()
-                .Where(x => x.Name.ToLower().Contains(name))
-                .OrderByDescending(x => x.CreationTime);
+                .Where(x => x.Name.ToLower().Contains(name));
+
+            if (!string.IsNullOrEmpty(roleFilter))
+            {
+                var listRoleId = roleFilter.Split(',').Select(x => new Guid(x)).ToList();
+                query = query.Where(x => x.Roles.Any(c => listRoleId.Contains(c.RoleId)));
+            }
 
             int totalCount = await query.CountAsync();
 
@@ -124,6 +128,7 @@ namespace Scool.ApplicationServices
             IList<UserDto> users = await query
                 .Page(pageIndex, pageSize)
                 .Include(x => x.Roles)
+                .OrderByDescending(x => x.CreationTime)
                 .Select(x => ObjectMapper.Map<IdentityUser, UserDto>(x))
                 .ToListAsync();
 
@@ -179,6 +184,16 @@ namespace Scool.ApplicationServices
                 .Where(x => x.Id == userProfile.UserId)
                 .Select(x => x.Email)
                 .FirstOrDefaultAsync() ?? string.Empty;
+        }
+
+        [HttpGet("api/app/app-identity-user/is-role-name-already-used")]
+        public Task<bool> IsRoleNameAlreadyUsed(Guid? roleId, string name)
+        {
+            var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();
+            return _identityRoleRepository.ToEfCoreRepository()
+                .Where(x => x.Name == lowercaseName)
+                .Where(x => x.Id != roleId)
+                .AnyAsync();
         }
 
         private async Task SetAccountOptionsAsync()

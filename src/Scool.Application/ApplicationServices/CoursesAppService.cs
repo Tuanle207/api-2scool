@@ -55,7 +55,7 @@ namespace Scool.Application.ApplicationServices
         }
 
         [Authorize(CoursesPermissions.GetAll)]
-        [HttpGet("api/app/courses/IsNameAlreadyUsed")]
+        [HttpGet("api/app/courses/is-name-already-used")]
         public async Task<bool> IsNameAlreadyUsedAsync([FromQuery] Guid? id, [FromQuery] string name)
         {
             var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();

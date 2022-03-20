@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Scool.Application.Dtos;
 using Scool.Application.IApplicationServices;
 using Scool.Domain.Common;
@@ -40,6 +41,15 @@ namespace Scool.Application.ApplicationServices
             );
 
             return result;
+        }
+
+        [HttpGet("api/app/grades/is-name-already-used")]
+        public async Task<bool> IsNameAlreadyUsedAsync(Guid? id, string name)
+        {
+            var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();
+            return await _gradeRepo.AsNoTracking()
+                .Where(x => x.Id != id && x.DisplayName.ToLower() == lowercaseName)
+                .AnyAsync();
         }
     }
 }

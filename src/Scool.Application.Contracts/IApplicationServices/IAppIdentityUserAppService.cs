@@ -18,5 +18,7 @@ namespace Scool.Application.IApplicationServices
         Task<bool> IsEmailAlreadyUsed(Guid? userId, string email);
 
         Task<string> DoesStudentHaveAccountAlready(Guid studentId);
+
+        Task<bool> IsRoleNameAlreadyUsed(Guid? roleId, string name);
     }
 }
