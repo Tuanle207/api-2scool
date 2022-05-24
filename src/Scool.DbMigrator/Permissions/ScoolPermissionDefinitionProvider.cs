@@ -2,7 +2,7 @@
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Localization;
 
-namespace Scool.Permissions
+namespace Scool.DbMigrator.Permissions
 {
     public class ScoolPermissionDefinitionProvider : PermissionDefinitionProvider
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Scool.Domain.Views
+namespace Scool.Views
 {
     public class CommonDcpFault
     {

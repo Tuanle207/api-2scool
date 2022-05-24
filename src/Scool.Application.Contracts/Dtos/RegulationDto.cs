@@ -1,7 +1,7 @@
 ﻿using System;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class RegulationDto : EntityDto<Guid>
     {
@@ -11,7 +11,7 @@ namespace Scool.Application.Dtos
         public string Type { get; set; }
         public Guid CriteriaId { get; set; }
         public CriteriaDto Criteria { get; set; }
-        public DateTime CreationTime { get; set;}
+        public DateTime CreationTime { get; set; }
         public bool IsActive { get; set; }
     }
 }

@@ -1,12 +1,7 @@
-﻿using Scool.Domain.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class TaskAssignmentForUpdateDto : EntityDto<Guid>
     {
@@ -14,6 +9,6 @@ namespace Scool.Application.Dtos
         public Guid ClassAssignedId { get; set; }
         public string TaskType { get; set; }
         public DateTime StartTime { get; set; }
-        public DateTime EndTime  { get; set; }
+        public DateTime EndTime { get; set; }
     }
 }

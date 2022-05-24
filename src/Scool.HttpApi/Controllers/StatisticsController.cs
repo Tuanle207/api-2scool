@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
+using Scool.Dtos;
+using Scool.IApplicationServices;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using Scool.Application.Dtos;
-using Scool.Domain.Common;
+using Scool.Common;
+using Scool.Dtos;
 
-namespace Scool.Application.AutoMapperProfiles
+namespace Scool.AutoMapperProfiles
 {
     public class StudentsAutoMapperProfile : Profile
     {
@@ -11,7 +11,7 @@ namespace Scool.Application.AutoMapperProfiles
             CreateMap<Student, StudentDto>();
             CreateMap<Student, StudentForSimpleListDto>();
             CreateMap<CreateUpdateStudentDto, Student>();
-            
+
         }
     }
 }

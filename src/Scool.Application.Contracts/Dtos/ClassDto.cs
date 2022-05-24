@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class ClassDto : EntityDto<Guid>
     {

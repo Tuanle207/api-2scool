@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using Scool.Application.Dtos;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Dtos;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 
-namespace Scool.Application.IApplicationServices
+namespace Scool.IApplicationServices
 {
-    public interface ICoursesAppService: IBasicCrudAppService<
+    public interface ICoursesAppService : IBasicCrudAppService<
         Guid,
         CourseDto,
         CourseListDto,

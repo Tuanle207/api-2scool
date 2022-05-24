@@ -1,7 +1,7 @@
 ﻿using System;
 using Volo.Abp.Domain.Entities;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class CriteriaForSimpleListDto : Entity<Guid>
     {

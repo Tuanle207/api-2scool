@@ -1,4 +1,4 @@
-﻿using Scool.Application.ObjectExtentions;
+﻿using Scool.ObjectExtentions;
 using System;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectExtending;
@@ -29,8 +29,8 @@ namespace Scool
                 ObjectExtensionManager.Instance.AddOrUpdateProperty<IdentityUserCreateDto, Guid?>(
                     IdentityUserCreateDtoExt.StudentId, opt => opt.DefaultValue = null);
 
-                ObjectExtensionManager.Instance.AddOrUpdateProperty<IdentityUserCreateDto, DateTime?>(
-                   IdentityUserCreateDtoExt.Dob, opt => opt.DefaultValue = null);
+                ObjectExtensionManager.Instance.AddOrUpdateProperty<IdentityUserCreateDto, Guid?>(
+                   IdentityUserCreateDtoExt.TeacherId, opt => opt.DefaultValue = null);
 
                 
             });

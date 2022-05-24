@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
 using System;
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
-namespace Scool.Application.ApplicationServices
+namespace Scool.ApplicationServices
 {
     public class StudentsAppService : BasicCrudAppService<
         Student,
@@ -39,11 +39,11 @@ namespace Scool.Application.ApplicationServices
 
             query = query.Include(e => e.Class);
 
-            query = string.IsNullOrEmpty(input.SortName) ? 
+            query = string.IsNullOrEmpty(input.SortName) ?
                 query.OrderBy(x => x.Class.Name)
-                .OrderBy(x => x.Name) : 
+                .OrderBy(x => x.Name) :
                 query.OrderBy(input.SortName, input.Ascend);
-                
+
             query = query.Page(pageIndex, pageSize);
 
             var items = await query.Select(x => ObjectMapper.Map<Student, StudentDto>(x))
@@ -59,9 +59,9 @@ namespace Scool.Application.ApplicationServices
                    .FirstOrDefaultAsync();
             return ObjectMapper.Map<Student, StudentDto>(entity);
         }
-        
+
         [HttpGet("/api/app/students/simple-list")]
-        public async Task<PagingModel<StudentForSimpleListDto>> GetSimpleListAsync([FromQuery(Name = "classId")]Guid? classId)
+        public async Task<PagingModel<StudentForSimpleListDto>> GetSimpleListAsync([FromQuery(Name = "classId")] Guid? classId)
         {
             var items = await _studentRepo
                 .WhereIf(classId != null, x => x.ClassId == (Guid)classId)
@@ -76,6 +76,6 @@ namespace Scool.Application.ApplicationServices
 
             return result;
         }
-        
+
     }
 }

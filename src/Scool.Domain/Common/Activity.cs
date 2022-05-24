@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Volo.Abp.Auditing;
+using Volo.Abp;
 using Volo.Abp.Domain.Entities;
-
-namespace Scool.Domain.Common
+using Volo.Abp.MultiTenancy;
+namespace Scool.Common
 {
-    public class Activity : Entity<Guid>, IAuditedObject
+    public class Activity : Entity<Guid>, IHaveUpdationInfo, IMultiTenant, ISoftDelete
     {
         public string Name { get; set; }
         public string Description { get; set; }
@@ -15,16 +15,18 @@ namespace Scool.Domain.Common
         public Course Course { get; set; }
         public string Status { get; set; }
         public ICollection<ActivityParticipant> Participants { get; set; }
-
-        // audit property
         public DateTime CreationTime { get; set; }
         public Guid? CreatorId { get; set; }
-        public Guid? LastModifierId { get; set; }
-        public DateTime? LastModificationTime { get; set; }
+        public Account CreatorAccount { get; set; }
+        public Guid? LastUpdatorId { get; set; }
+        public Account LastUpdatorAccount { get; set; }
+        public DateTime? LastUpdationTime { get; set; }
+        public Guid? TenantId { get; set; }
+        public bool IsDeleted { get; set; }
 
         public Activity()
         {
             Participants = new List<ActivityParticipant>();
         }
-  }
+    }
 }

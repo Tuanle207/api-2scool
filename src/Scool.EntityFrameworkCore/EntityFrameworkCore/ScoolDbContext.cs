@@ -1,11 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Scool.Domain.Common;
-using Scool.Domain.Views;
+using Scool.Common;
 using Scool.Users;
+using Scool.Views;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Volo.Abp.Data;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.Modeling;
 using Volo.Abp.Identity;
+using Volo.Abp.MultiTenancy;
 using Volo.Abp.Users.EntityFrameworkCore;
 
 namespace Scool.EntityFrameworkCore
@@ -22,8 +26,10 @@ namespace Scool.EntityFrameworkCore
     [ConnectionStringName("Default")]
     public class ScoolDbContext : AbpDbContext<ScoolDbContext>
     {
+        protected ICurrentAccount CurrentAccount => LazyServiceProvider.LazyGetRequiredService<ICurrentAccount>();
+
         public DbSet<AppUser> Users { get; set; }
-        public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<Account> Accounts { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<Grade> Grades { get; set; }
         public DbSet<Class> Classes { get; set; }
@@ -40,9 +46,11 @@ namespace Scool.EntityFrameworkCore
         public DbSet<DcpClassReport> DcpClassReports { get; set; }
         public DbSet<DcpClassReportItem> DcpClassReportItems { get; set; }
         public DbSet<DcpStudentReport> DcpStudentReports { get; set; }
+        public DbSet<AppNotification> AppNotifications { get; set; }
+        public DbSet<UserNotificationCount> UserNotificationCounts { get; set; }
 
 
-        
+
         // not actually stored in DB
         public DbSet<OverallClassRanking> OverallClassRanking { get; set; }
         public DbSet<DcpClassRanking> DcpClassRankings { get; set; }
@@ -59,7 +67,6 @@ namespace Scool.EntityFrameworkCore
         public ScoolDbContext(DbContextOptions<ScoolDbContext> options)
             : base(options)
         {
-
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -84,6 +91,57 @@ namespace Scool.EntityFrameworkCore
             /* Configure your own tables/entities inside the ConfigureScool method */
 
             builder.ConfigureScool();
+        }
+
+        private void Presave()
+        {
+            var currentAccountId = CurrentAccount.Id;
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.State == EntityState.Added)
+                {
+
+                    if (entry.Entity is IHaveCreationInfo)
+                    {
+                        var entity = entry.Entity as IHaveCreationInfo;
+                        entity.CreatorId = currentAccountId;
+                        entity.CreationTime = DateTime.UtcNow;
+                    }
+                }
+                if (entry.State == EntityState.Modified)
+                {
+                    if (entry.Entity is IHaveUpdationInfo )
+                    {
+                        var entity = entry.Entity as IHaveUpdationInfo;
+                        entity.LastUpdatorId = currentAccountId;
+                        entity.LastUpdationTime = DateTime.UtcNow;
+                    }
+                }
+            }
+    }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            Presave();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            Presave();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override int SaveChanges()
+        {
+            Presave();
+            return base.SaveChanges();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            Presave();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
         }
     }
 }

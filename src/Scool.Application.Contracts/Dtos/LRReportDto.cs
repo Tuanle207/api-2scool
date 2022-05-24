@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class LRReportDto : EntityDto<Guid>
     {
@@ -13,6 +13,6 @@ namespace Scool.Application.Dtos
         public string Status { get; set; }
         public DateTime CreationTime { get; set; }
         public Guid? CreatorId { get; set; }
-        public UserForSimpleListDto Creator { get; set; }
+        public SimpleAccountDto Creator { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\common.props" />
 
@@ -10,8 +10,7 @@
   <ItemGroup>
     <Compile Remove="Courses\**" />
     <EmbeddedResource Remove="Courses\**" />
-    <None Remove="Courses\**" />
-  </ItemGroup>
+    <None Remove="Courses\**" /></ItemGroup>
 
   <ItemGroup>
     <None Remove="IApplicationServices\IDcpReportsAppService.cs~RFac056a.TMP" />

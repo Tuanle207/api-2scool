@@ -1,9 +1,9 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Domain.Common;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
 using System;
 using System.Collections.Generic;
 using System.IO;

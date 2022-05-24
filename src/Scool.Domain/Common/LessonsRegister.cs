@@ -1,14 +1,12 @@
 using Scool.AppConsts;
 using System;
 using System.Collections.Generic;
-using Volo.Abp.Auditing;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.MultiTenancy;
 
-
-namespace Scool.Domain.Common
-
+namespace Scool.Common
 {
-    public class LessonsRegister : Entity<Guid>, ICreationAuditedObject
+    public class LessonsRegister : Entity<Guid>, IHaveCreationInfo, IMultiTenant
     {
         public int TotalPoint { get; set; }
         public int AbsenceNo { get; set; }
@@ -18,7 +16,8 @@ namespace Scool.Domain.Common
         public ICollection<LessonRegisterPhotos> AttachedPhotos { get; set; }
         public DateTime CreationTime { get; set; }
         public Guid? CreatorId { get; set; }
-
+        public Account CreatorAccount { get; set; }
+        public Guid? TenantId { get; set; }
         public LessonsRegister()
         {
             Status = DcpReportStatus.Created;

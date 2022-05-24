@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using System;
 using System.Collections.Generic;

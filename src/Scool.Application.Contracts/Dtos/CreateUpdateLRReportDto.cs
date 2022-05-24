@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class CreateUpdateLRReportDto
     {
@@ -9,5 +9,5 @@ namespace Scool.Application.Dtos
         public IFormFile Photo { get; set; }
         public int AbsenceNo { get; set; }
         public int TotalPoint { get; set; }
-}
+    }
 }

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Scool.Application.Dtos;
-using Scool.Domain.Common;
+using Scool.Common;
+using Scool.Dtos;
 
 namespace Scool.AutoMapperProfiles
 {

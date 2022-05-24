@@ -1,4 +1,4 @@
-﻿using Scool.Localization;
+using Scool.Localization;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.FeatureManagement;

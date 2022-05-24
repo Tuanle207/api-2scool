@@ -8,7 +8,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.Guids;
 using Volo.Abp.Users;
 
-namespace Scool.Application.FileHandler
+namespace Scool.FileHandler
 {
     public class FileHandler : IFileHandler, IScopedDependency
     {

@@ -1,4 +1,4 @@
-﻿namespace Scool.Application.Dtos
+﻿namespace Scool.Dtos
 {
     public class CreateUpdateGradeDto
     {

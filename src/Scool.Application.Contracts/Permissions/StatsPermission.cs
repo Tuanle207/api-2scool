@@ -3,7 +3,7 @@ using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Localization;
 
 
-namespace Scool.Application.Permissions
+namespace Scool.Permissions
 {
     public class StatsPermission : PermissionDefinitionProvider
     {

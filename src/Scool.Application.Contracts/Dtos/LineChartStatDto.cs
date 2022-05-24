@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class LineChartStatDto
     {

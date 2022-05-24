@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Volo.Abp;
 using Volo.Abp.Domain.Entities;
-
-namespace Scool.Domain.Common
+using Volo.Abp.MultiTenancy;
+namespace Scool.Common
 {
-    public class Course : Entity<Guid>
+    public class Course : Entity<Guid>, ISoftDelete, IMultiTenant
     {
         public string Name { get; set; }
         public string Description { get; set; }
@@ -13,6 +14,8 @@ namespace Scool.Domain.Common
         public ICollection<Class> Classes { get; set; }
         public ICollection<Regulation> Regulations { get; set; }
         public ICollection<Activity> Activities { get; set; }
+        public Guid? TenantId { get; set; }
+        public bool IsDeleted { get; set; }
 
         public Course()
         {

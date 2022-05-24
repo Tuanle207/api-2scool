@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
 using System;
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
-namespace Scool.Application.ApplicationServices
+namespace Scool.ApplicationServices
 {
     public class ClassesAppService : BasicCrudAppService<
         Class,
@@ -51,6 +51,7 @@ namespace Scool.Application.ApplicationServices
         public override async Task<ClassDto> GetAsync(Guid id)
         {
             var entity = await _classRepo.Where(e => e.Id == id)
+                    .AsNoTracking()
                     .Include(e => e.Course)
                     .Include(e => e.FormTeacher)
                     .Include(e => e.Grade)
@@ -63,6 +64,8 @@ namespace Scool.Application.ApplicationServices
         public async Task<PagingModel<ClassForSimpleListDto>> GetSimpleListAsync()
         {
             var items = await _classRepo
+                .AsNoTracking()
+                .Include(x => x.Grade)
                 .OrderBy(x => x.Name)
                 .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
                 .ToListAsync();

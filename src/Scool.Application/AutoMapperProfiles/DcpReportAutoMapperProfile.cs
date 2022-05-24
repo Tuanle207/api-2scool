@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Scool.Application.Dtos;
-using Scool.Domain.Common;
+using Scool.Common;
+using Scool.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +12,9 @@ namespace Scool.AutoMapperProfiles
         public DcpReportAutoMapperProfile()
         {
             CreateMap<DcpReport, DcpReportDto>()
-                .ForMember(dest => dest.Creator, opt => opt.Ignore())
-                .AfterMap((src, dest) =>
-                {
-                    dest.Creator = null;
-                });
+                .ForMember(dest => dest.Creator, opt =>
+                    opt.MapFrom(src =>
+                        src.CreatorAccount));
             CreateMap<DcpClassReport, DcpClassReportDto>();
             CreateMap<DcpClassReportItem, DcpClassReportItemDto>();
             CreateMap<DcpStudentReport, DcpStudentReportDto>();
@@ -40,7 +38,10 @@ namespace Scool.AutoMapperProfiles
             CreateMap<LessonsRegister, LRReportDto>()
                 .ForMember(dest => dest.AttachedPhotos, opt =>
                     opt.MapFrom(src =>
-                        src.AttachedPhotos.Select(x => x.Photo).ToList()));
+                        src.AttachedPhotos.Select(x => x.Photo).ToList()))
+                .ForMember(dest => dest.Creator, opt =>
+                    opt.MapFrom(src =>
+                        src.CreatorAccount));
 
 
         }

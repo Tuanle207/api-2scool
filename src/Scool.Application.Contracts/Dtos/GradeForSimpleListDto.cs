@@ -1,7 +1,7 @@
 using System;
 using Volo.Abp.Application.Dtos;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class GradeForSimpleListDto : EntityDto<Guid>
     {

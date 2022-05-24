@@ -1,17 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
-using Scool.Application.Dtos;
-using Scool.Application.FileHandler;
-using Scool.Application.IApplicationServices;
-using Scool.Application.Permissions;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.FileHandler;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
+using Scool.Permissions;
 using Scool.Users;
 using System;
 using System.Collections.Generic;
@@ -37,21 +35,18 @@ namespace Scool.ApplicationServices
         private readonly IRepository<LessonsRegister, Guid> _leRepo;
         private readonly IRepository<LessonRegisterPhotos, Guid> _lePhotoRepo;
         private readonly IRepository<AppUser, Guid> _usersRepo;
-        private readonly ICurrentUser _currentUser;
         private readonly IFileHandler _fileHandler;
         private readonly IGuidGenerator _guidGenerator;
 
         public LrReportAppService(
             IRepository<LessonsRegister, Guid> leRepo,
             IRepository<LessonRegisterPhotos, Guid> lePhotoRepo,
-            ICurrentUser currentUser,
             IFileHandler fileHandler,
             IGuidGenerator guidGenerator, 
             IRepository<AppUser, Guid> usersRepo) : base(leRepo)
         {
             _leRepo = leRepo;
             _lePhotoRepo = lePhotoRepo;
-            _currentUser = currentUser;
             _fileHandler = fileHandler;
             _guidGenerator = guidGenerator;
             _usersRepo = usersRepo;
@@ -137,27 +132,12 @@ namespace Scool.ApplicationServices
             query = query.Page(pageIndex, pageSize);
 
             query = query.AsNoTracking()
+                .Include(x => x.CreatorAccount)
                 .Include(x => x.AttachedPhotos)
                 .Include(x => x.Class);
 
             var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x))
                 .ToListAsync();
-
-            // get creators
-            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
-            var creators = await _usersRepo
-                .Where(x => userIds.Contains(x.Id))
-                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                .ToListAsync();
-
-            // attach creator on each item
-            foreach (var report in items)
-            {
-                if (report.CreatorId != null)
-                {
-                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
-                }
-            }
 
             return new PagingModel<LRReportDto>(items, totalCount, pageIndex, pageSize);
         }
@@ -171,13 +151,12 @@ namespace Scool.ApplicationServices
 
             var query = _leRepo.Filter(input.Filter);
 
-            var userId = _currentUser.Id;
-            if (!userId.HasValue)
+            if (!CurrentAccount.HasAccount)
             {
-                return null;
+                return new PagingModel<LRReportDto>();
             }
 
-            query = query.Where(x => x.CreatorId == userId.Value);
+            query = query.Where(x => x.CreatorId == CurrentAccount.Id.Value);
 
             var totalCount = await query.CountAsync();
 
@@ -187,6 +166,7 @@ namespace Scool.ApplicationServices
 
             query = query
                 .AsNoTracking()
+                .Include(x => x.CreatorAccount)
                 .Include(x => x.AttachedPhotos)
                 .Include(x => x.Class);
 
@@ -250,11 +230,10 @@ namespace Scool.ApplicationServices
                .Include(x => x.AttachedPhotos)
                .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (_currentUser.Id.HasValue && _currentUser.Id.Value != oReport.CreatorId)
+            if (!CurrentAccount.HasAccount || (CurrentAccount.HasAccount && CurrentAccount.Id.Value != oReport.CreatorId))
             {
                 return;
             }
-
 
             // delete old photo
             if (oReport.AttachedPhotos.Count > 0)

@@ -1,4 +1,4 @@
-﻿namespace Scool.Application.Permissions
+﻿namespace Scool.Permissions
 {
     internal static class PermissionGroupsConst
     {

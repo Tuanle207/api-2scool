@@ -1,20 +1,19 @@
 ﻿using Scool.AppConsts;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Volo.Abp.Auditing;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.MultiTenancy;
 
-namespace Scool.Domain.Common
+namespace Scool.Common
 {
-    public class DcpReport : Entity<Guid>, ICreationAuditedObject
+    public class DcpReport : Entity<Guid>, IHaveCreationInfo, IMultiTenant
     {
         public string Status { get; set; }
         public DateTime CreationTime { get; set; }
-        public Guid? CreatorId { get; set; }
         public ICollection<DcpClassReport> DcpClassReports { get; set; }
+        public Guid? CreatorId { get; set; }
+        public Account CreatorAccount { get; set; }
+        public Guid? TenantId { get; set; }
 
         public DcpReport()
         {
@@ -22,11 +21,9 @@ namespace Scool.Domain.Common
             Status = DcpReportStatus.Created;
         }
 
-        public DcpReport(Guid id)
+        public DcpReport(Guid reportId) : this()
         {
-            Id = id;
-            DcpClassReports = new List<DcpClassReport>();
-            Status = DcpReportStatus.Created;
+            Id = reportId;
         }
     }
 }

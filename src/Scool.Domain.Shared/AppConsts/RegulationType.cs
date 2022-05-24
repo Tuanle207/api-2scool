@@ -1,4 +1,4 @@
-namespace Scool.Domain.Shared.AppConsts
+namespace Scool.AppConsts
 {
     public static class RegulationType
     {

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Scool.Application.Dtos;
-using Scool.Domain.Common;
+using Scool.Common;
+using Scool.Dtos;
 using Scool.Users;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,15 +13,13 @@ namespace Scool.AutoMapperProfiles
         public UsersAutoMapperProfile()
         {
             CreateMap<AppUser, UserForSimpleListDto>();
-            CreateMap<UserProfile, UserForTaskAssignmentDto>()
+            CreateMap<Account, SimpleAccountDto>()
                 .ForMember(dest => dest.Name, opt =>
                     opt.MapFrom(src => src.DisplayName))
-                .ForMember(dest => dest.PhoneNumber, opt =>
-                    opt.MapFrom(dest => dest.PhoneNo))
-                .ForMember(dest => dest.Id, opt =>
-                    opt.MapFrom(src => src.UserId))
-                .ForMember(dest => dest.UserProfileId, opt =>
-                    opt.MapFrom(src => src.Id));
+                .ForMember(dest => dest.IsStudent, opt =>
+                    opt.MapFrom(src => src.StudentId.HasValue))
+                .ForMember(dest => dest.IsTeacher, opt =>
+                    opt.MapFrom(src => src.TeacherId.HasValue));
 
             CreateMap<IdentityUser, UserDto>()
                 .ConvertUsing(src => MapIdentityUserToUserDto(src));

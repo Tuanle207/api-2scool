@@ -1,11 +1,11 @@
-﻿using Scool.Domain.Shared.AppConsts;
+﻿using Scool.AppConsts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class RegulationDataImportDto
     {

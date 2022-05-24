@@ -1,16 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
-namespace Scool.Application.ApplicationServices
+namespace Scool.ApplicationServices
 {
     public class GradesAppService : BasicCrudAppService<
         Grade,

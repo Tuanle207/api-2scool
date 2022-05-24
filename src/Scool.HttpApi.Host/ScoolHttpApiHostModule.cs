@@ -37,6 +37,10 @@ using Microsoft.AspNetCore.Hosting;
 using Scool.Users;
 using Volo.Abp.Identity;
 using Microsoft.AspNetCore.Identity;
+using Scool.Middlewares;
+using Volo.Abp.MultiTenancy;
+using Volo.Abp.AspNetCore.SignalR;
+using Scool.Notification;
 
 namespace Scool
 {
@@ -50,7 +54,8 @@ namespace Scool
         typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
         typeof(AbpAccountWebIdentityServerModule),
         typeof(AbpAspNetCoreSerilogModule),
-        typeof(AbpSwashbuckleModule)
+        typeof(AbpSwashbuckleModule),
+        typeof(AbpAspNetCoreSignalRModule)
     )]
     public class ScoolHttpApiHostModule : AbpModule
     {
@@ -70,16 +75,18 @@ namespace Scool
             ConfigureCors(context, configuration);
             ConfigureSwaggerServices(context, configuration);
             ConfigureAutoAntiForgery();
+            context.Services.AddHttpContextAccessor();
+            context.Services.AddTransient<NotificationHub>();
         }
 
         private void ConfigureBundles()
         {
             Configure<AbpBundlingOptions>(options =>
             {
-                options.StyleBundles.Configure(
-                    BasicThemeBundles.Styles.Global,
-                    bundle => { bundle.AddFiles("/global-styles.css"); }
-                );
+                //options.StyleBundles.Configure(
+                //    BasicThemeBundles.Styles.Global,
+                //    bundle => { bundle.AddFiles("/global-styles.css"); }
+                //);
             });
         }
 
@@ -260,17 +267,29 @@ namespace Scool
                 });
             }
 
-            
-
             app.UseRouting();
             app.UseCors(CorsPolicyName);
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.StartsWithSegments("/signalr-hubs-notification"))
+                {
+                    var bearerToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(bearerToken))
+                    {
+                        context.Request.Headers.Add("Authorization", $"Bearer {bearerToken}");
+                    }
+                }
+                await next();
+            });
+
             app.UseAuthentication();
             app.UseJwtTokenMiddleware();
 
-            // if (MultiTenancyConsts.IsEnabled)
-            // {
-            //     app.UseMultiTenancy();
-            // }
+
+            if (MultiTenancyConsts.IsEnabled)
+            {
+                app.UseMultiTenancy();
+            }
 
             //  app.Use(async (ctx, next) =>
             // {
@@ -279,8 +298,8 @@ namespace Scool
             //     await next();
             // });
 
-
             app.UseUnitOfWork();
+            app.UseMiddleware<AsyncInitializationMiddleware>();
             app.UseIdentityServer();
             app.UseAuthorization();
 
@@ -297,7 +316,14 @@ namespace Scool
 
             app.UseAuditing();
             app.UseAbpSerilogEnrichers();
-            app.UseConfiguredEndpoints();
+            //app.UseConfiguredEndpoints();
+            app.UseConfiguredEndpoints(endpoints =>
+            {
+                endpoints.MapHub<NotificationHub>("/signalr-hubs-notification", options =>
+                {
+                    options.LongPolling.PollTimeout = TimeSpan.FromSeconds(30);
+                });
+            });
         }
     }
 }

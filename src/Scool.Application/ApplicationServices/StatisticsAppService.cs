@@ -2,20 +2,19 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Application.Permissions;
-using Scool.Domain.Common;
-using Scool.Domain.Views;
+using Scool.Common;
+using Scool.Dtos;
 using Scool.EntityFrameworkCore;
+using Scool.IApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Extensions;
+using Scool.Permissions;
+using Scool.Views;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
@@ -40,11 +39,11 @@ namespace Scool.ApplicationServices
             var query = _context.DcpClassFaults.FromSqlRaw(@$"
                 SET ARITHABORT ON;
                 SELECT 
-                F.Id ClassId,
-                COALESCE(X.Faults, 0) Faults,
-                COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
-                F.Name ClassName,
-                J.Name FormTeacherName 
+                    F.Id ClassId,
+                    COALESCE(X.Faults, 0) Faults,
+                    COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+                    F.Name ClassName,
+                    J.Name FormTeacherName 
                 FROM  (
                 SELECT A.Id ClassId,
                 COUNT(D.Id) Faults,
@@ -54,9 +53,15 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
                 LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
                 LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                WHERE (C.Status = 'Approved') AND (
-                    (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0)
-                )
+                WHERE 
+                    {FilterCurrentTenantSql("A.TenantId ")} AND 
+                    (
+                        C.Status = N'{DcpReportStatus.Approved}' AND 
+                        (
+                            DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                            DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                        )
+                    )
                 GROUP BY A.Id
                 ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId
@@ -87,10 +92,18 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpClassReport] C ON B.DcpClassReportId = C.Id
                 LEFT JOIN [AppDcpReport] D ON C.DcpReportId = D.Id
                 LEFT JOIN [AppClass] E ON C.ClassId = E.Id
-                WHERE (D.Status = 'Approved') AND (
-                    (DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0) 
-                    OR B.Id IS NULL 
-                )
+                WHERE 
+                    {FilterCurrentTenantSql("A.TenantId ")} AND 
+                    (
+                        D.Status = N'{DcpReportStatus.Approved}' AND 
+                        (
+                            (
+                                DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND 
+                                DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0
+                            ) OR 
+                            B.Id IS NULL
+                        )
+                    )
                 GROUP BY A.Id
                 ) X RIGHT JOIN [AppRegulation] Y ON X.Id = Y.Id
                 JOIN [AppCriteria] Z ON Y.CriteriaId = Z.Id
@@ -109,7 +122,7 @@ namespace Scool.ApplicationServices
         {
             var input = ParseQueryInput(timeFilter);
 
-            const int LRRatio = 2; 
+            const int LRRatio = 2;
             const int DCPRatio = 1;
             const int TotalRatio = LRRatio + DCPRatio;
 
@@ -126,8 +139,15 @@ namespace Scool.ApplicationServices
 	                SUM(A.TotalPoint) LrPoints,
 	                SUM(A.AbsenceNo) TotalAbsence
 	                FROM [AppLessonsRegister] A
-	                WHERE (A.Status = N'{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', A.CreationTime) >= 0 
-                    AND DATEDIFF(DAY, A.CreationTime, '{input.EndTime}') >= 0))
+	                WHERE 
+                        {FilterCurrentTenantSql("A.TenantId ")} AND 
+                        (
+                            A.Status = N'{DcpReportStatus.Approved}' AND 
+                            (
+                                DATEDIFF(DAY, '{input.StartTime}', A.CreationTime) >= 0 AND 
+                                DATEDIFF(DAY, A.CreationTime, '{input.EndTime}') >= 0
+                            )
+                        )
 	                GROUP BY A.ClassId
 	                ) X RIGHT JOIN [AppClass] B ON B.Id = X.ClassId
                 )
@@ -165,8 +185,15 @@ namespace Scool.ApplicationServices
 		                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
 		                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
 		                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-		                WHERE (C.Status = N'{DcpReportStatus.Approved}') AND ((DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 
-                        AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0))
+		                WHERE 
+                            {FilterCurrentTenantSql("A.TenantId ")} AND 
+                            (
+                                C.Status = N'{DcpReportStatus.Approved}' AND 
+                                ( 
+                                    DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                    DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                )
+                            )
 		                GROUP BY A.ID
 	                ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId
 	                ) DCP 
@@ -209,10 +236,18 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
                 LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
                 LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                WHERE (C.Status = 'Approved') AND (
-                    (DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0) 
-                    OR D.Id IS NULL 
-                )
+                WHERE 
+                    {FilterCurrentTenantSql("A.TenantId ")} AND 
+                    (
+                        C.Status = N'{DcpReportStatus.Approved}' AND 
+                        (
+                            (
+                                DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                            ) OR 
+                            D.Id IS NULL
+                        )
+                    )
                 GROUP BY A.ID
                 ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId) R
@@ -243,10 +278,18 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpClassReportItem] C ON B.DcpClassReportItemId = C.Id
                 LEFT JOIN [AppDcpClassReport] D ON C.DcpClassReportId = D.Id
                 LEFT JOIN [AppDcpReport] E ON D.DcpReportId = E.Id
-                WHERE (E.Status = 'Approved') AND (
-                    (DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0) 
-                    OR B.Id IS NULL
-                )
+                WHERE 
+                    {FilterCurrentTenantSql("A.TenantId ")} AND 
+                    (
+                        E.Status = N'{DcpReportStatus.Approved}' AND 
+                        (
+                            (
+                                DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND 
+                                DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0
+                            ) OR 
+                            B.Id IS NULL
+                        )
+                    )
                 GROUP BY A.Id
                 ) X RIGHT JOIN [AppStudent] Y ON X.Id = Y.Id
                 JOIN [AppClass] Z ON Y.ClassId = Z.Id
@@ -363,6 +406,15 @@ namespace Scool.ApplicationServices
 
 
             return result;
+        }
+
+        private string FilterCurrentTenantSql(string expression)
+        {
+            if (CurrentTenant.Id.HasValue)
+            {
+                return $"{expression} = '{CurrentTenant.Id.Value}'";
+            }
+            return $"{expression} IS NULL";
         }
 
         private StatisticsQueryInput ParseQueryInput(TimeFilterDto timeFilter, bool byWeek = true)

@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Application.Permissions;
-using Scool.Domain.Common;
-using Scool.Domain.Shared.AppConsts;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
+using Scool.Notification;
+using Scool.Permissions;
 using Scool.Users;
 using System;
 using System.Collections.Generic;
@@ -36,6 +36,7 @@ namespace Scool.ApplicationServices
         private readonly IRepository<Regulation, Guid> _regulationsRepo;
         private readonly IRepository<AppUser, Guid> _usersRepo;
         private readonly IGuidGenerator _guidGenerator;
+        private readonly INotificationService _notificationService;
 
         public DcpReportsAppService
         (
@@ -46,8 +47,8 @@ namespace Scool.ApplicationServices
             IRepository<Student, Guid> studentsRepo,
             IRepository<Regulation, Guid> regulationsRepo,
             IRepository<AppUser, Guid> usersRepo,
-            IGuidGenerator guidGenerator
-        ) : base (dcpReportsRepo)
+            IGuidGenerator guidGenerator,
+            INotificationService notificationService) : base(dcpReportsRepo)
         {
             _dcpReportsRepo = dcpReportsRepo;
             _dcpClassReportsRepo = dcpClassReportsRepo;
@@ -57,6 +58,7 @@ namespace Scool.ApplicationServices
             _regulationsRepo = regulationsRepo;
             _usersRepo = usersRepo;
             _guidGenerator = guidGenerator;
+            _notificationService = notificationService;
 
             DeletePolicyName = ReportsPermissions.RemoveDcpReport;
         }
@@ -121,7 +123,10 @@ namespace Scool.ApplicationServices
                 );
             }
 
-            var dcpReport = await _dcpReportsRepo.InsertAsync(report);
+            var dcpReport = await _dcpReportsRepo.InsertAsync(report, autoSave: true);
+
+            await _notificationService.CreateNotificationForRoleAsync(NotificationType.DcpReportCreated, AppRole.DcpManager, CurrentAccount.Id);
+            await _notificationService.NotifyToRoleAsync(AppRole.DcpManager, NotificationType.DcpReportCreated);
 
             return ObjectMapper.Map<DcpReport, DcpReportDto>(dcpReport);
         }
@@ -239,6 +244,7 @@ namespace Scool.ApplicationServices
             var item = await _dcpReportsRepo
                 .AsNoTracking()
                 .Where(x => x.Id == id)
+                .Include(x => x.CreatorAccount)
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
@@ -251,17 +257,6 @@ namespace Scool.ApplicationServices
                 .ThenInclude(e => e.Criteria)
                 .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .FirstOrDefaultAsync();
-
-            // get creators
-            var userId = item.CreatorId;
-            if (userId != null)
-            {
-                var creator = await _usersRepo
-                   .Where(x => x.Id == userId)
-                   .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                   .FirstOrDefaultAsync();
-                item.Creator = creator;
-            }
 
             return item;
         }
@@ -291,6 +286,7 @@ namespace Scool.ApplicationServices
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);
             query = query.Page(pageIndex, pageSize);
             query = query
+                .Include(x => x.CreatorAccount)
                 .Include(e => e.DcpClassReports)
                 .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
@@ -301,25 +297,7 @@ namespace Scool.ApplicationServices
                 .ThenInclude(e => e.Faults)
                 .ThenInclude(e => e.Regulation);
 
-            
-
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x)).ToListAsync();
-
-            // get creators
-            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
-            var creators = await _usersRepo
-                .Where(x => userIds.Contains(x.Id))
-                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                .ToListAsync();
-
-            // attach creator on each item
-            foreach (var report in items)
-            {
-                if (report.CreatorId != null)
-                {
-                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
-                }
-            }
 
             var totalCount = await query.CountAsync();
 
@@ -349,12 +327,11 @@ namespace Scool.ApplicationServices
             var query = _dcpReportsRepo.Filter(input.Filter);
 
             // Filter by current user
-            var userId = CurrentUser.Id;
-            if (!userId.HasValue)
+            if (!CurrentAccount.HasAccount)
             {
-                return null;
+                return new PagingModel<DcpReportDto>();
             }
-            query = query.Where(x => x.CreatorId == userId.Value);
+            query = query.Where(x => x.CreatorId == CurrentAccount.Id.Value);
 
             // Count total count
             int totalCount = await query.CountAsync();
@@ -398,39 +375,36 @@ namespace Scool.ApplicationServices
             // Include navigation properties
             query = query
                 .AsNoTracking()
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class);
+                .Include(x => x.CreatorAccount)
+                .Include(x => x.DcpClassReports)
+                    .ThenInclude(x => x.Class);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .ToListAsync();
 
-            // get creators
-            var userIds = items.Where(x => x.CreatorId != null).Select(x => x.CreatorId).ToList();
-            var creators = await _usersRepo
-                .Where(x => userIds.Contains(x.Id))
-                .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                .ToListAsync();
-
-            // attach creator on each item
-            foreach (var report in items)
-            {
-                if (report.CreatorId != null)
-                {
-                    report.Creator = creators.FirstOrDefault(x => x.Id == (Guid)report.CreatorId);
-                }
-            }
-
             return new PagingModel<DcpReportDto>(items, totalCount, pageIndex, pageSize);
+        }
+
+        [Authorize(ReportsPermissions.RemoveDcpReport)]
+        public override async Task DeleteAsync(Guid id)
+        {
+            var oReport = await _dcpReportsRepo.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (!CurrentAccount.HasAccount || (CurrentAccount.HasAccount && CurrentAccount.Id.Value != oReport.CreatorId))
+            {
+                return;
+            }
+            await _dcpReportsRepo.DeleteAsync(id);
         }
 
         private async Task CleanDcpReport(Guid id)
         {
             var report = await _dcpReportsRepo
               .Where(x => x.Id == id)
-              .Include(e => e.DcpClassReports)
-              .ThenInclude(e => e.Faults)
-              .ThenInclude(e => e.RelatedStudents)
+              .Include(x => x.DcpClassReports)
+              .ThenInclude(x => x.Faults)
+              .ThenInclude(x => x.RelatedStudents)
               .FirstOrDefaultAsync();
 
             var classReportsIds = report.DcpClassReports.Select(x => x.Id).ToList();

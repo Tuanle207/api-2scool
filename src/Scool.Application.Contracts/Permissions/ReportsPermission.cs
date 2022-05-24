@@ -2,7 +2,7 @@ using Scool.Localization;
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Localization;
 
-namespace Scool.Application.Permissions
+namespace Scool.Permissions
 {
     internal class ReportsPermission : PermissionDefinitionProvider
     {
@@ -23,19 +23,19 @@ namespace Scool.Application.Permissions
             var dcpReportPermission = group.AddPermission(ReportsPermissions.DcpReportPermission,
                 L(prefix + ReportsPermissions.DcpReportPermission));
 
-            dcpReportPermission.AddChild(ReportsPermissions.CreateNewDcpReport, 
+            dcpReportPermission.AddChild(ReportsPermissions.CreateNewDcpReport,
                 L(prefix + ReportsPermissions.CreateNewDcpReport));
 
-            dcpReportPermission.AddChild(ReportsPermissions.GetDcpReportApprovalHistory, 
+            dcpReportPermission.AddChild(ReportsPermissions.GetDcpReportApprovalHistory,
                 L(prefix + ReportsPermissions.GetDcpReportApprovalHistory));
 
-            dcpReportPermission.AddChild(ReportsPermissions.DcpReportApproval, 
+            dcpReportPermission.AddChild(ReportsPermissions.DcpReportApproval,
                 L(prefix + ReportsPermissions.DcpReportApproval));
 
             dcpReportPermission.AddChild(ReportsPermissions.GetMyDcpReport,
                 L(prefix + ReportsPermissions.GetMyDcpReport));
 
-            dcpReportPermission.AddChild(ReportsPermissions.RemoveDcpReport, 
+            dcpReportPermission.AddChild(ReportsPermissions.RemoveDcpReport,
                 L(prefix + ReportsPermissions.RemoveDcpReport));
 
             dcpReportPermission.AddChild(ReportsPermissions.GetDcpReportDetail,

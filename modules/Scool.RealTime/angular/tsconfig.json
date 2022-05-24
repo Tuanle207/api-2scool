@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.prod.json",
+  "compilerOptions": {
+    "paths": {
+      "@scool/real-time": [
+        "projects/real-time/src/public-api.ts"
+      ],
+      "@scool/real-time/config": [
+        "projects/real-time/config/src/public-api.ts"
+      ],
+      "@proxy": ["projects/real-time/src/lib/proxy/index.ts"],
+      "@proxy/*": ["projects/real-time/src/lib/proxy/*"]
+    }
+  }
+}

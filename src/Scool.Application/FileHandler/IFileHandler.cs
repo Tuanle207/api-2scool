@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace Scool.Application.FileHandler
+namespace Scool.FileHandler
 {
     public interface IFileHandler
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class CreateUpdateCourseDto
     {

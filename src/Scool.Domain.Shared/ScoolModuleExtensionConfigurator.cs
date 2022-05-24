@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Volo.Abp.Identity;
+﻿using Scool.Domain.Shared.AppConsts;
 using Volo.Abp.ObjectExtending;
 using Volo.Abp.Threading;
 
@@ -67,6 +66,23 @@ namespace Scool
              * See the documentation for more:
              * https://docs.abp.io/en/abp/latest/Module-Entity-Extensions
              */
+            
+            ObjectExtensionManager.Instance.Modules()
+                .ConfigureTenantManagement(identity =>
+                {
+                    identity.ConfigureTenant(tenant => {
+                        tenant.AddOrUpdateProperty<string>(TenantSettingType.DisplayName, opt => 
+                        {
+                            opt.DefaultValue = null;
+                        });
+
+                        tenant.AddOrUpdateProperty<string>(TenantSettingType.PhotoUrl, opt =>
+                        {
+                            opt.DefaultValue = null;
+                        });
+                    });
+                });
+            
         }
     }
 }

@@ -1,10 +1,10 @@
-﻿using Scool.Application.Dtos;
-using Scool.Domain.Views;
+﻿using Scool.Dtos;
 using Scool.Infrastructure.Common;
+using Scool.Views;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Scool.Application.IApplicationServices
+namespace Scool.IApplicationServices
 {
     public interface IStatisticsAppService
     {

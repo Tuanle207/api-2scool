@@ -3,7 +3,7 @@ using Scool.Infrastructure.Common;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 
-namespace Scool.Infrastructure.ApplicationServices
+namespace Scool.Infrastructure.AppService
 {
 
     /**

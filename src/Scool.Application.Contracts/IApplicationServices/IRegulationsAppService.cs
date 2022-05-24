@@ -1,5 +1,5 @@
-﻿using Scool.Application.Dtos;
-using Scool.Infrastructure.ApplicationServices;
+﻿using Scool.Dtos;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using System;
 using System.Threading.Tasks;

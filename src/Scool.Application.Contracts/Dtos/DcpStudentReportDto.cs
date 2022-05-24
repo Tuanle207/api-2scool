@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Entities;
 
-namespace Scool.Application.Dtos
+namespace Scool.Dtos
 {
     public class DcpStudentReportDto : Entity<Guid>
     {

@@ -1,4 +1,4 @@
-﻿using Localization.Resources.AbpUi;
+using Localization.Resources.AbpUi;
 using Scool.Localization;
 using Volo.Abp.Account;
 using Volo.Abp.FeatureManagement;

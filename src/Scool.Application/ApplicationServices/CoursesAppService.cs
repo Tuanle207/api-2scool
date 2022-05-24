@@ -1,20 +1,20 @@
 using System;
-using Scool.Domain.Common;
 using Volo.Abp.Domain.Repositories;
 using System.Threading.Tasks;
 using Scool.Infrastructure.Linq;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Scool.Infrastructure.ApplicationServices;
-using Scool.Application.IApplicationServices;
-using Scool.Application.Dtos;
 using Scool.Infrastructure.Common;
-using Scool.Application.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Scool.Dtos;
+using Scool.Common;
+using Scool.IApplicationServices;
+using Scool.Permissions;
+using Scool.Infrastructure.AppService;
 
-namespace Scool.Application.ApplicationServices
+namespace Scool.ApplicationServices
 {
     public class CoursesAppService :
         BasicCrudAppService<

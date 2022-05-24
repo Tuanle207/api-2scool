@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.MultiTenancy;
 
-namespace Scool.Domain.Common
+namespace Scool.Common
 {
-    public class DcpStudentReport : Entity<Guid>
+    public class DcpStudentReport : Entity<Guid>, IMultiTenant
     {
         public Guid StudentId { get; set; }
         public Student Student { get; set; }
         public Guid DcpClassReportItemId { get; set; }
+        public Guid? TenantId { get; set; }
     }
 }

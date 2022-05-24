@@ -1,4 +1,4 @@
-﻿namespace Scool.Permissions
+﻿namespace Scool.DbMigrator.Permissions
 {
     public static class ScoolPermissions
     {

@@ -17,6 +17,8 @@ namespace Scool.Infrastructure.Common
         public string SortName { get; set; }
         [JsonPropertyName("ascend")]
         public bool Ascend { get; set; }
+        [JsonPropertyName("all")]
+        public bool GetAll { get; set; } = false;
         [JsonPropertyName("filter")]
         public IEnumerable<Filter> Filter { get; set; } = Array.Empty<Filter>();
     }

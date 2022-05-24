@@ -2,9 +2,9 @@ using Scool.Localization;
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Localization;
 
-namespace Scool.Application.Permissions
+namespace Scool.Permissions
 {
-    internal class CoursesPermission: PermissionDefinitionProvider
+    internal class CoursesPermission : PermissionDefinitionProvider
     {
         public override void Define(IPermissionDefinitionContext context)
         {
@@ -21,19 +21,19 @@ namespace Scool.Application.Permissions
             var coursePermission = group.AddPermission(CoursesPermissions.Permission,
                 L(prefix + CoursesPermissions.Permission));
 
-            coursePermission.AddChild(CoursesPermissions.Get, 
+            coursePermission.AddChild(CoursesPermissions.Get,
                 L(prefix + CoursesPermissions.Get));
 
-            coursePermission.AddChild(CoursesPermissions.GetAll, 
+            coursePermission.AddChild(CoursesPermissions.GetAll,
                 L(prefix + CoursesPermissions.GetAll));
 
-            coursePermission.AddChild(CoursesPermissions.Create, 
+            coursePermission.AddChild(CoursesPermissions.Create,
                 L(prefix + CoursesPermissions.Create));
 
             coursePermission.AddChild(CoursesPermissions.Update,
                 L(prefix + CoursesPermissions.Update));
 
-            coursePermission.AddChild(CoursesPermissions.Delete, 
+            coursePermission.AddChild(CoursesPermissions.Delete,
                 L(prefix + CoursesPermissions.Delete));
         }
 

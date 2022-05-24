@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
-using Scool.Application.Dtos;
-using Scool.Application.IApplicationServices;
-using Scool.Application.Permissions;
-using Scool.Domain.Common;
-using Scool.Infrastructure.ApplicationServices;
+using Scool.Common;
+using Scool.Dtos;
+using Scool.IApplicationServices;
+using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
+using Scool.Permissions;
 using Scool.Users;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
-namespace Scool.Application.ApplicationServices
+namespace Scool.ApplicationServices
 {
     public class TaskAssigmentAppService : BasicCrudAppService<
             TaskAssignment,
@@ -27,18 +27,15 @@ namespace Scool.Application.ApplicationServices
         >, ITaskAssigmentAppService
     {
         private readonly IRepository<TaskAssignment, Guid> _taskAssignmentRepo;
-        private readonly IRepository<AppUser, Guid> _usersRepo;
-        private readonly IRepository<UserProfile, Guid> _userProfilesRepo;
+        private readonly IRepository<Account, Guid> _accountRepo;
         private readonly IRepository<Class, Guid> _classesRepo;
 
         public TaskAssigmentAppService(IRepository<TaskAssignment, Guid> taskAssignmentRepo,
-            IRepository<UserProfile, Guid> userProfilesRepo,
-            IRepository<AppUser, Guid> usersRepo, IRepository<Class, Guid> classesRepo)
-            : base(taskAssignmentRepo)
+            IRepository<Account, Guid> accountsRepo,
+            IRepository<Class, Guid> classesRepo) : base(taskAssignmentRepo)
         {
             _taskAssignmentRepo = taskAssignmentRepo;
-            _userProfilesRepo = userProfilesRepo;
-            _usersRepo = usersRepo;
+            _accountRepo = accountsRepo;
             _classesRepo = classesRepo;
         }
 
@@ -78,26 +75,14 @@ namespace Scool.Application.ApplicationServices
         public async Task<PagingModel<TaskAssignmentDto>> GetAllAsync(TaskAssignmentFilterDto input)
         {
             var query = _taskAssignmentRepo
-                     .WhereIf(!String.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
+                     .WhereIf(!string.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
                      .Include(x => x.ClassAssigned)
-                     .Include(x => x.AssigneeProfile)
-                     .ThenInclude(y => y.Class)
+                     .Include(x => x.Assignee)
+                     .Include(x => x.CreatorAccount)
                      .OrderBy(x => x.ClassAssigned.Name)
                      .Select(x => ObjectMapper.Map<TaskAssignment, TaskAssignmentDto>(x));
 
             var items = await query.ToListAsync();
-
-            if (items.Count > 0 && items[0].CreatorId != null)
-            {
-                var creator = await _usersRepo
-                   .Where(x => x.Id == items[0].CreatorId)
-                   .Select(x => ObjectMapper.Map<AppUser, UserForSimpleListDto>(x))
-                   .FirstOrDefaultAsync();
-                foreach (var item in items)
-                {
-                    item.Creator = creator;
-                }
-            }
 
             return new PagingModel<TaskAssignmentDto>(items, items.Count);
         }
@@ -107,7 +92,7 @@ namespace Scool.Application.ApplicationServices
         public async Task<PagingModel<TaskAssignmentForUpdateDto>> GetForUpdateAsync(TaskAssignmentFilterDto input)
         {
             var query = _taskAssignmentRepo
-                    .WhereIf(String.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
+                    .WhereIf(string.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
                     .Select(x => ObjectMapper.Map<TaskAssignment, TaskAssignmentForUpdateDto>(x));
 
             var items = await query.ToListAsync();
@@ -121,7 +106,7 @@ namespace Scool.Application.ApplicationServices
         {
             var emptyRes = new PagingModel<ClassForSimpleListDto>(new List<ClassForSimpleListDto>(), 0);
 
-            if (!CurrentUser.IsAuthenticated)
+            if (!CurrentAccount.IsAuthenticated)
             {
                 return emptyRes;
             }
@@ -133,20 +118,14 @@ namespace Scool.Application.ApplicationServices
                     .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
                     .ToListAsync();
 
-                return new PagingModel<ClassForSimpleListDto>(classItems, 0);
+                return new PagingModel<ClassForSimpleListDto>(classItems, classItems.Count);
 
             }
 
-            if (CurrentUser.Id != null)
+            if (CurrentAccount.HasAccount && CurrentAccount.Id.HasValue)
             {
-                var profile = await _userProfilesRepo.Where(x => x.UserId == CurrentUser.Id).FirstOrDefaultAsync();
-                if (profile == null)
-                {
-                    return emptyRes;
-                }
-
                 var items = await _taskAssignmentRepo
-                    .Where(x => x.AssigneeId == profile.Id)
+                    .Where(x => x.AssigneeId == CurrentAccount.Id)
                     .Where(x => x.TaskType == taskType)
                     .Include(x => x.ClassAssigned)
                     .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x.ClassAssigned))
