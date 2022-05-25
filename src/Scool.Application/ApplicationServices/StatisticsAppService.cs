@@ -8,7 +8,7 @@ using Scool.EntityFrameworkCore;
 using Scool.IApplicationServices;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Extensions;
-using Scool.Permissions;
+using Scool.Permission;
 using Scool.Views;
 using System;
 using System.Collections.Generic;

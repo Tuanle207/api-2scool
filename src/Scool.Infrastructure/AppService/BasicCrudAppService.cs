@@ -9,6 +9,7 @@ using Scool.Infrastructure.Linq;
 using Scool.Infrastructure.Common;
 using Scool.Users;
 using Volo.Abp.Application.Services;
+using Scool.Courses;
 
 namespace Scool.Infrastructure.AppService
 {
@@ -36,6 +37,7 @@ namespace Scool.Infrastructure.AppService
     {
         protected new IRepository<TEntity, TKey> Repository { get; }
         protected ICurrentAccount CurrentAccount => LazyServiceProvider.LazyGetRequiredService<ICurrentAccount>();
+        protected IActiveCourse ActiveCourse => LazyServiceProvider.LazyGetRequiredService<IActiveCourse>();
 
         protected BasicCrudAppService(IRepository<TEntity, TKey> repository)
                 : base(repository)

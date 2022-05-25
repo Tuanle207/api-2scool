@@ -55,8 +55,12 @@ namespace Scool.EntityFrameworkCore
             builder.Entity<Course>(b => 
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(Course), ScoolConsts.DbSchema);
-                b.HasMany(b => b.Classes).WithOne(e => e.Course).HasForeignKey(f => f.CourseId);
-                b.HasMany(b => b.Activities).WithOne(e => e.Course).HasForeignKey(f => f.CourseId);
+                b.HasMany(b => b.Classes).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction); ;
+                b.HasMany(b => b.Regulations).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction); ;
+                b.HasMany(b => b.Activities).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction); ;
+                b.HasMany(b => b.Students).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction); ;
+                b.HasMany(b => b.Teachers).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction); ;
+                b.HasMany(b => b.TaskAssignments).WithOne(e => e.Course).HasForeignKey(f => f.CourseId).OnDelete(DeleteBehavior.NoAction);
                 b.ConfigureByConvention();
             });
             

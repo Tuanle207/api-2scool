@@ -5,7 +5,7 @@ using Volo.Abp.Domain.Entities;
 using Volo.Abp.MultiTenancy;
 namespace Scool.Common
 {
-    public class Activity : Entity<Guid>, IHaveUpdationInfo, IMultiTenant, ISoftDelete
+    public class Activity : Entity<Guid>, IHaveUpdationInfo, IHaveCourse, IMultiTenant, ISoftDelete
     {
         public string Name { get; set; }
         public string Description { get; set; }

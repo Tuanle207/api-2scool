@@ -34,17 +34,19 @@ namespace Scool.ApplicationServices
         {
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-            var query = _classRepo.Filter(input.Filter);
+            var query = Repository.AsNoTracking()
+                .Filter(input.Filter)
+                .Where(x => x.CourseId == ActiveCourse.Id.Value);
+
+            var totalCount = await query.CountAsync();
+
             query = query.OrderBy(x => x.Name);
             query = query.Page(pageIndex, pageSize);
             query = query.Include(e => e.Course)
                     .Include(e => e.FormTeacher)
                     .Include(e => e.Grade);
-
             var items = await query.Select(x => ObjectMapper.Map<Class, ClassForListDto>(x))
                 .ToListAsync();
-            var totalCount = await _classRepo.Filter(input.Filter).CountAsync();
-
             return new PagingModel<ClassForListDto>(items, totalCount, pageIndex, pageSize);
         }
 
@@ -63,8 +65,13 @@ namespace Scool.ApplicationServices
 
         public async Task<PagingModel<ClassForSimpleListDto>> GetSimpleListAsync()
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<ClassForSimpleListDto>(new List<ClassForSimpleListDto>(), 0);
+            }
             var items = await _classRepo
                 .AsNoTracking()
+                .Where(x => x.CourseId == ActiveCourse.Id.Value)
                 .Include(x => x.Grade)
                 .OrderBy(x => x.Name)
                 .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
@@ -84,6 +91,7 @@ namespace Scool.ApplicationServices
         {
             var lowercaseName = string.IsNullOrEmpty(name) ? string.Empty : name.ToLower();
             return await _classRepo.AsNoTracking()
+                .Where(x => x.CourseId == ActiveCourse.Id)
                 .Where(x => x.Id != id && x.Name.ToLower() == lowercaseName)
                 .AnyAsync();
         }

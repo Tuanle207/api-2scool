@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Scool.Common;
+using Scool.Courses;
 using Scool.Users;
 using Scool.Views;
 using System;
@@ -27,6 +28,7 @@ namespace Scool.EntityFrameworkCore
     public class ScoolDbContext : AbpDbContext<ScoolDbContext>
     {
         protected ICurrentAccount CurrentAccount => LazyServiceProvider.LazyGetRequiredService<ICurrentAccount>();
+        protected IActiveCourse ActiveCourse => LazyServiceProvider.LazyGetRequiredService<IActiveCourse>();
 
         public DbSet<AppUser> Users { get; set; }
         public DbSet<Account> Accounts { get; set; }
@@ -106,6 +108,11 @@ namespace Scool.EntityFrameworkCore
                         var entity = entry.Entity as IHaveCreationInfo;
                         entity.CreatorId = currentAccountId;
                         entity.CreationTime = DateTime.UtcNow;
+                    }
+                    if (entry.Entity is IHaveCourse && ActiveCourse.IsAvailable)
+                    {
+                        var entity = entry.Entity as IHaveCourse;
+                        entity.CourseId = ActiveCourse.Id.Value;
                     }
                 }
                 if (entry.State == EntityState.Modified)

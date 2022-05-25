@@ -8,7 +8,7 @@ using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
 using Scool.Notification;
-using Scool.Permissions;
+using Scool.Permission;
 using Scool.Users;
 using System;
 using System.Collections.Generic;
@@ -67,6 +67,7 @@ namespace Scool.ApplicationServices
         public async override Task<DcpReportDto> CreateAsync(CreateUpdateDcpReportDto input)
         {
             var report = new DcpReport(_guidGenerator.Create());
+            report.TenantId = CurrentTenant.Id;
 
             // report on each class
             IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
@@ -75,6 +76,7 @@ namespace Scool.ApplicationServices
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
                 int penalty = 0;
 
+                dcpClassReport.TenantId = CurrentTenant.Id;
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
 
@@ -84,6 +86,7 @@ namespace Scool.ApplicationServices
                 {
                     IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
+                    dcpClassReportItem.TenantId = CurrentTenant.Id;
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
@@ -103,7 +106,8 @@ namespace Scool.ApplicationServices
                         var studentReported = await _dcpStudentReportsRepo.InsertAsync(new DcpStudentReport
                         {
                             DcpClassReportItemId = dcpClassReportItem.Id,
-                            StudentId = stdnt.Id
+                            StudentId = stdnt.Id,
+                            TenantId = CurrentTenant.Id
                         });
                         // add student report to dcpClassReportItem
                         dcpClassReportItem.RelatedStudents.Add(studentReported);
@@ -141,7 +145,7 @@ namespace Scool.ApplicationServices
 
             // replace with new report with the same ID (like the way we are doing HTTP PUT)
             var report = new DcpReport(id);
-
+            report.TenantId = CurrentTenant.Id;
             // report on each class
             IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
@@ -150,6 +154,7 @@ namespace Scool.ApplicationServices
                 int penalty = 0;
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
+                dcpClassReport.TenantId = CurrentTenant.Id;
 
                 var faults = cls.Faults;
                 // regulations broken
@@ -157,6 +162,7 @@ namespace Scool.ApplicationServices
                 {
                     IList<Guid> listStudentId = reg.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
+                    dcpClassReportItem.TenantId = CurrentTenant.Id;
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
                     dcpClassReportItem.RegulationId = reg.RegulationId;
 
@@ -176,7 +182,8 @@ namespace Scool.ApplicationServices
                         var studentReported = await _dcpStudentReportsRepo.InsertAsync(new DcpStudentReport
                         {
                             DcpClassReportItemId = dcpClassReportItem.Id,
-                            StudentId = stdnt.Id
+                            StudentId = stdnt.Id,
+                            TenantId = CurrentTenant.Id
                         });
                         // add student report to dcpClassReportItem
                         dcpClassReportItem.RelatedStudents.Add(studentReported);
@@ -246,15 +253,15 @@ namespace Scool.ApplicationServices
                 .Where(x => x.Id == id)
                 .Include(x => x.CreatorAccount)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
+                    .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
+                    .ThenInclude(e => e.Faults)
+                    .ThenInclude(e => e.RelatedStudents)
+                    .ThenInclude(e => e.Student)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation)
-                .ThenInclude(e => e.Criteria)
+                    .ThenInclude(e => e.Faults)
+                    .ThenInclude(e => e.Regulation)
+                    .ThenInclude(e => e.Criteria)
                 .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .FirstOrDefaultAsync();
 
@@ -288,14 +295,14 @@ namespace Scool.ApplicationServices
             query = query
                 .Include(x => x.CreatorAccount)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class)
+                    .ThenInclude(e => e.Class)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.RelatedStudents)
-                .ThenInclude(e => e.Student)
+                    .ThenInclude(e => e.Faults)
+                    .ThenInclude(e => e.RelatedStudents)
+                    .ThenInclude(e => e.Student)
                 .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Faults)
-                .ThenInclude(e => e.Regulation);
+                    .ThenInclude(e => e.Faults)
+                    .ThenInclude(e => e.Regulation);
 
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x)).ToListAsync();
 
