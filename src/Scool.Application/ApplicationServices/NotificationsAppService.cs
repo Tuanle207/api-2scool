@@ -51,7 +51,7 @@ namespace Scool.ApplicationServices
             return new PagingModel<NotificationDto>(notifications, totalCount, pageIndex, pageSize);
         }
 
-        //[HttpPost("api/app/notifications/{id{")]
+        [HttpPost("api/app/notifications/{id}")]
         public async Task MarkAppNotificationAsSeen(Guid id)
         {
             var notification = await _appNotificationsRepository.FirstOrDefaultAsync(x => x.Id == id);

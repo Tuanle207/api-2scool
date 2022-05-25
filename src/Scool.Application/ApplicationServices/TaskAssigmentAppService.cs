@@ -7,7 +7,7 @@ using Scool.Dtos;
 using Scool.IApplicationServices;
 using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
-using Scool.Permissions;
+using Scool.Permission;
 using Scool.Users;
 using System;
 using System.Collections.Generic;

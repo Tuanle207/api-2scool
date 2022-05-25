@@ -5,12 +5,14 @@ using Volo.Abp.MultiTenancy;
 
 namespace Scool.Common
 {
-    public class Regulation : Entity<Guid>, IHaveCreationInfo, ISoftDelete, IMultiTenant
+    public class Regulation : Entity<Guid>, IHaveCreationInfo, IHaveCourse, ISoftDelete, IMultiTenant
     {
         public string Name { get; set; }
         public string DisplayName { get; set; }
         public int Point { get; set; }
         public string Type { get; set; }
+        public Guid CourseId { get; set; }
+        public Course Course { get; set; }
         public Guid CriteriaId { get; set; }
         public Criteria Criteria { get; set; }
         public bool IsActive { get; set; }

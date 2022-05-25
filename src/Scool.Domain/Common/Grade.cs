@@ -6,8 +6,8 @@ namespace Scool.Common
 {
     public class Grade : Entity<Guid>, IMultiTenant
     {
-        public string Name { get; set; }
         public string DisplayName { get; set; }
+        public int GradeCode { get; set; }
         public string Description { get; set; }
         public Guid? TenantId { get; set; }
     }

@@ -9,7 +9,7 @@ using Scool.IApplicationServices;
 using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
-using Scool.Permissions;
+using Scool.Permission;
 using Scool.Users;
 using System;
 using System.Collections.Generic;
@@ -64,6 +64,7 @@ namespace Scool.ApplicationServices
                 ClassId = input.ClassId,
                 TotalPoint = input.TotalPoint,
                 AbsenceNo = input.AbsenceNo,
+                TenantId = CurrentTenant.Id
             });
 
             await CurrentUnitOfWork.SaveChangesAsync();
@@ -71,7 +72,8 @@ namespace Scool.ApplicationServices
             await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
             {
                 LessonRegisterId = report.Id,
-                Photo = photoUrl
+                Photo = photoUrl,
+                TenantId = CurrentTenant.Id
             });
 
             var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
@@ -189,6 +191,7 @@ namespace Scool.ApplicationServices
             oReport.ClassId = input.ClassId;
             oReport.TotalPoint = input.TotalPoint;
             oReport.AbsenceNo = input.AbsenceNo;
+            oReport.TenantId = CurrentTenant.Id;
 
             // save LR Report
             var report = await _leRepo.UpdateAsync(oReport);
@@ -210,7 +213,8 @@ namespace Scool.ApplicationServices
                 await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
                 {
                     LessonRegisterId = oReport.Id,
-                    Photo = photoUrl
+                    Photo = photoUrl,
+                    TenantId = CurrentTenant.Id,
                 });
 
                 result.AttachedPhotos = new List<string>()

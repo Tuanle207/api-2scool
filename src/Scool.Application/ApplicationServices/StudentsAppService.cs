@@ -34,7 +34,9 @@ namespace Scool.ApplicationServices
         {
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
-            var query = _studentRepo.Filter(input.Filter);
+            var query = Repository.AsNoTracking()
+                .Filter(input.Filter)
+                .Where(x => x.CourseId == ActiveCourse.Id.Value);
             var totalCount = await query.CountAsync();
 
             query = query.Include(e => e.Class);
@@ -64,7 +66,8 @@ namespace Scool.ApplicationServices
         public async Task<PagingModel<StudentForSimpleListDto>> GetSimpleListAsync([FromQuery(Name = "classId")] Guid? classId)
         {
             var items = await _studentRepo
-                .WhereIf(classId != null, x => x.ClassId == (Guid)classId)
+                .WhereIf(classId.HasValue, x => x.ClassId == classId.Value)
+                .WhereIf(!classId.HasValue, x => x.CourseId == ActiveCourse.Id.Value)
                 .Select(x => ObjectMapper.Map<Student, StudentForSimpleListDto>(x))
                 .ToListAsync();
 

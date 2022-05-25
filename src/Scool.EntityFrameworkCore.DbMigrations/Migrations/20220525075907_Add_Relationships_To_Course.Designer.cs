@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scool.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore;
@@ -10,9 +11,10 @@ using Volo.Abp.EntityFrameworkCore;
 namespace Scool.Migrations
 {
     [DbContext(typeof(ScoolMigrationsDbContext))]
-    partial class ScoolMigrationsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220525075907_Add_Relationships_To_Course")]
+    partial class Add_Relationships_To_Course
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,6 +70,9 @@ namespace Scool.Migrations
                     b.Property<Guid?>("TeacherId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("TeacherId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("TenantId");
@@ -86,6 +91,10 @@ namespace Scool.Migrations
                     b.HasIndex("TeacherId")
                         .IsUnique()
                         .HasFilter("[TeacherId] IS NOT NULL");
+
+                    b.HasIndex("TeacherId1")
+                        .IsUnique()
+                        .HasFilter("[TeacherId1] IS NOT NULL");
 
                     b.ToTable("AppAccount");
                 });
@@ -2760,6 +2769,10 @@ namespace Scool.Migrations
                         .WithOne()
                         .HasForeignKey("Scool.Common.Account", "TeacherId");
 
+                    b.HasOne("Scool.Common.Teacher", null)
+                        .WithOne("Account")
+                        .HasForeignKey("Scool.Common.Account", "TeacherId1");
+
                     b.Navigation("Class");
 
                     b.Navigation("Student");
@@ -3347,6 +3360,8 @@ namespace Scool.Migrations
 
             modelBuilder.Entity("Scool.Common.Teacher", b =>
                 {
+                    b.Navigation("Account");
+
                     b.Navigation("FormClass");
                 });
 

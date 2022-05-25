@@ -7,5 +7,6 @@ namespace Scool.AppConsts
     public static class HttpContextConstants
     {
         public const string CurrentAccountProperty = "Property_CurrentAccount";
+        public const string ActiveCourseProperty = "Property_ActiveCourse";
     }
 }

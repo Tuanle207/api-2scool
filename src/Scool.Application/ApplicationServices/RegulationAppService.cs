@@ -31,7 +31,7 @@ namespace Scool.ApplicationServices
         public async Task<PagingModel<RegulationForSimpleListDto>> GetSimpleListAsync()
         {
             var regulations = await _regulationsRepo
-                .Where(x => x.IsActive == true)
+                .Where(x => x.IsActive == true && x.CourseId == ActiveCourse.Id.Value)
                 .Include(x => x.Criteria)
                 .OrderBy(x => x.DisplayName)
                 .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
@@ -51,10 +51,10 @@ namespace Scool.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             
-            var query = _regulationsRepo.Filter(input.Filter);
+            var query = _regulationsRepo.AsNoTracking()
+                .Filter(input.Filter)
+                .Where(x => x.IsActive == true && x.CourseId == ActiveCourse.Id.Value);
             
-            query = query.Where(x => x.IsActive == true);
-
             var totalCount = await query.CountAsync();
             
             query = string.IsNullOrEmpty(input.SortName) ? query.OrderBy(x => x.Id) : query.OrderBy(input.SortName, input.Ascend);

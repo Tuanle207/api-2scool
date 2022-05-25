@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Scool.Dtos;
 using Scool.Common;
 using Scool.IApplicationServices;
-using Scool.Permissions;
 using Scool.Infrastructure.AppService;
+using Scool.Permission;
 
 namespace Scool.ApplicationServices
 {
@@ -36,7 +36,6 @@ namespace Scool.ApplicationServices
             CreatePolicyName = CoursesPermissions.Create;
             UpdatePolicyName = CoursesPermissions.Update;
             DeletePolicyName = CoursesPermissions.Delete;
-
         }
 
         [Authorize(CoursesPermissions.GetAll)]
@@ -62,6 +61,34 @@ namespace Scool.ApplicationServices
             return await _courseRepo.AsNoTracking()
                 .Where(x => x.Id != id && x.Name.ToLower() == lowercaseName)
                 .AnyAsync();
+        }
+
+        [Authorize(CoursesPermissions.Update)]
+        [HttpGet("api/app/courses/activate/{id}")]
+        public async Task<bool> MarkAsActiveCourseAsync(Guid id)
+        {
+            var allCourses = await _courseRepo.ToListAsync();
+
+            var activeCourses = allCourses.Where(x => x.IsActive).ToList();
+            foreach (var activeCourse in activeCourses)
+            {
+                activeCourse.IsActive = false;
+            }
+            var newActiveCourse = allCourses.FirstOrDefault(x => x.Id == id);
+            if (newActiveCourse == null)
+            {
+                return false;
+            }
+            newActiveCourse.IsActive = true;
+            await _courseRepo.UpdateManyAsync(allCourses);
+            await CurrentUnitOfWork.SaveChangesAsync();
+            return true;
+        }
+
+        [HttpGet("api/app/courses/has-active-course")]
+        public async Task<bool> HasActiveCourseAsync()
+        {
+            return await _courseRepo.AsNoTracking().AnyAsync(x => x.IsActive);
         }
     }
 }

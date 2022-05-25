@@ -6,9 +6,7 @@ using Scool.Dtos;
 using Scool.IApplicationServices;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Repositories;
@@ -87,7 +85,7 @@ namespace Scool.ApplicationServices
                         FullName = fullName,
                         ClassName = className,
                         Dob = dob,
-                        ParentPhoneNumber = parentPhoneNumber
+                        ParentPhoneNumber = parentPhoneNumber,
                     };
 
                     students.Add(student);
@@ -105,6 +103,7 @@ namespace Scool.ApplicationServices
                             Name = student.FullName,
                             Dob = student.Dob,
                             ParentPhoneNumber = student.ParentPhoneNumber,
+                            TenantId = CurrentTenant.Id
                         };
                         var matchClass = classes.FirstOrDefault(c => c.Name == student.ClassName);
                         if (matchClass != null)
@@ -175,7 +174,8 @@ namespace Scool.ApplicationServices
                             Name = teacher.FullName,
                             Dob = teacher.Dob,
                             Email = teacher.Email,
-                            PhoneNumber = teacher.PhoneNumber
+                            PhoneNumber = teacher.PhoneNumber,
+                            TenantId = CurrentTenant.Id
                         };
                         formatTeachers.Add(formatTeacher);
                     }
@@ -245,7 +245,8 @@ namespace Scool.ApplicationServices
                         var formatClass = new Class
                         {
                             Name = cls.Name,
-                            CourseId = course.Id
+                            CourseId = course.Id,
+                            TenantId = CurrentTenant.Id
                         };
                         var grade = grades.FirstOrDefault(x => x.DisplayName == cls.GradeName);
                         var teacher = teachers.FirstOrDefault(x => x.Name == cls.FormTeacherName);
@@ -319,13 +320,15 @@ namespace Scool.ApplicationServices
                             DisplayName = regulation.Name,
                             Point = regulation.Point,
                             Type = RegulationDataImportDto.GetRegulationType(regulation.Type),
+                            TenantId = CurrentTenant.Id,
                         };
                         var criteria = critierias.FirstOrDefault(x => x.DisplayName == regulation.CriteriaName);
                         if (criteria is null)
                         {
                             criteria = new Criteria
                             {
-                                DisplayName = regulation.CriteriaName
+                                DisplayName = regulation.CriteriaName,
+                                TenantId = CurrentTenant.Id
                             };
                             newCriterias.Add(criteria);
                         }

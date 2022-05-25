@@ -4,7 +4,7 @@ using Volo.Abp.MultiTenancy;
 
 namespace Scool.Common
 {
-    public class TaskAssignment : Entity<Guid>, IHaveCreationInfo, IMultiTenant
+    public class TaskAssignment : Entity<Guid>, IHaveCreationInfo, IHaveCourse, IMultiTenant
     {
         public Guid AssigneeId { get; set; }
         public Account Assignee { get; set; }
@@ -17,5 +17,7 @@ namespace Scool.Common
         public Guid? CreatorId { get; set; }
         public Account CreatorAccount { get; set; }
         public Guid? TenantId { get; set; }
+        public Guid CourseId { get; set; }
+        public Course Course { get; set; }
     }
 }

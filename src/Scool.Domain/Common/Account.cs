@@ -33,7 +33,7 @@ namespace Scool.Common
         public DateTime CreationTime { get; set; }
         public Guid? CreatorId { get; set; }
         public bool IsDeleted { get; set; }
-        public string ClassDisplayName { get; set; } //TODO: migrate DB
+        public string ClassDisplayName { get; set; }
         public Class Class { get; set; }
         public Student Student { get; set; }
         public Teacher Teacher { get; set; }

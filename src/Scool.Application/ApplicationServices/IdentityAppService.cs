@@ -41,7 +41,6 @@ namespace Scool.ApplicationServices
         private readonly IRepository<Account, Guid> _accountRepository;
         private readonly IRepository<Student, Guid> _studentRepository;
         private readonly IRepository<Teacher, Guid> _teacherRepository;
-        private readonly IRepository<Class, Guid> _classRepository;
         private readonly IEmailSender _emailSender;
 
         public IdentityAppService(
@@ -51,7 +50,6 @@ namespace Scool.ApplicationServices
             IOptions<IdentityOptions> identityOptions,
             IRepository<Account, Guid> accountRepository,
             IRepository<Student, Guid> studentRepository,
-            IRepository<Class, Guid> classRepository,
             IRepository<Teacher, Guid> teacherRepository,
             ISettingManager settingManager,
             IEmailSender emailSender)
@@ -64,7 +62,6 @@ namespace Scool.ApplicationServices
             _emailSender = emailSender;
             _studentRepository = studentRepository;
             _teacherRepository = teacherRepository;
-            _classRepository = classRepository;
         }
 
         public async override Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
@@ -116,23 +113,6 @@ namespace Scool.ApplicationServices
             await SetAccountOptionsAsync();
             return await base.UpdateAsync(id, input);
         }
-
-        private async Task CreateOrUpdateAccount(Guid userId)
-        {
-            var account = await _accountRepository.FirstOrDefaultAsync(x => x.UserId == userId);
-        }
-
-        //[HttpGet("/api/app/app-identity-user/user-for-task-assignment")]
-        //public async Task<PagingModel<TaskAssigneeDto>> GetUserForTaskAssignment([FromQuery(Name = "classId")]Guid? classId)
-        //{
-        //    var items = await _accountRepository.AsQueryable()
-        //        //.WhereIf(classId is not null, x => x.ClassId == classId)
-        //        //.WhereIf(classId is null, x => x.ClassId != null)
-        //        //.Include(x => x.Class)
-        //        .Select(x => ObjectMapper.Map<Account, TaskAssigneeDto>(x)).ToListAsync();
-
-        //    return new PagingModel<TaskAssigneeDto>(items, items.Count);
-        //}
 
         public async Task<PagingModel<UserDto>> PostPaging(PageInfoRequestDto input)
         {

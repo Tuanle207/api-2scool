@@ -6,7 +6,7 @@ using Volo.Abp.MultiTenancy;
 
 namespace Scool.Common
 {
-    public class Class : Entity<Guid>, ISoftDelete, IMultiTenant
+    public class Class : Entity<Guid>, ISoftDelete, IHaveCourse, IMultiTenant
     {
         public string Name { get; set; }
         public Guid CourseId { get; set; }
