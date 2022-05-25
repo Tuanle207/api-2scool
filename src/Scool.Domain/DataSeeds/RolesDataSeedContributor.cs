@@ -31,6 +31,10 @@ namespace Scool.DataSeeds
 
         public async Task SeedAsync(DataSeedContext context)
         {
+            if (!context.TenantId.HasValue)
+            {
+                return;
+            }
             try
             {
                 _logger.LogInformation("Start to seed roles and permissions");

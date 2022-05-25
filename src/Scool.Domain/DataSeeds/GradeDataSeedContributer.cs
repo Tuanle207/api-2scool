@@ -27,6 +27,10 @@ namespace Scool.DataSeeds
 
         public async Task SeedAsync(DataSeedContext context)
         {
+            if (!context.TenantId.HasValue)
+            {
+                return;
+            }
             _logger.LogInformation("Started to seed grade");
 
             try

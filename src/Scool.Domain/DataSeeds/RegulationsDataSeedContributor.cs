@@ -34,6 +34,10 @@ namespace Scool.DataSeeds
         {
             try
             {
+                if (!context.TenantId.HasValue)
+                {
+                    return;
+                }
                 var path = GetJsonDataFilePath("regulations-data.json");
                 var criterias = ParseDataFromJsonFile<List<CriteriaDto>>(path);
 
