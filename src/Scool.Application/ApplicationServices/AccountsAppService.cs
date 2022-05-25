@@ -34,7 +34,6 @@ namespace Scool.ApplicationServices
             return new PagingModel<SimpleAccountDto>(items, items.Count);
         }
 
-        [Authorize]
         [HttpGet("api/app/accounts/current-account")]
         public async Task<CurrentAccountDto> GetCurrentAccount()
         {
