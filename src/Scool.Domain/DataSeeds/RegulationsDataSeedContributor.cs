@@ -38,36 +38,37 @@ namespace Scool.DataSeeds
                 {
                     return;
                 }
-                var path = GetJsonDataFilePath("regulations-data.json");
-                var criterias = ParseDataFromJsonFile<List<CriteriaDto>>(path);
+                //TODO: No active course at beginning?
+                //var path = GetJsonDataFilePath("regulations-data.json");
+                //var criterias = ParseDataFromJsonFile<List<CriteriaDto>>(path);
 
-                if (await _criteriasRepo.AnyAsync(x => true) && await _regulationsRep.AnyAsync(x => true))
-                {
-                    return;
-                }
+                //if (await _criteriasRepo.AnyAsync(x => true) && await _regulationsRep.AnyAsync(x => true))
+                //{
+                //    return;
+                //}
 
-                _logger.LogInformation("Seeding criterias and regulations");
+                //_logger.LogInformation("Seeding criterias and regulations");
 
-                foreach (var item in criterias)
-                {
-                    var criteria = await _criteriasRepo.InsertAsync(new Criteria
-                    {
-                        DisplayName = item.CriteriaName,
-                        TenantId = context.TenantId
-                    });
+                //foreach (var item in criterias)
+                //{
+                //    var criteria = await _criteriasRepo.InsertAsync(new Criteria
+                //    {
+                //        DisplayName = item.CriteriaName,
+                //        TenantId = context.TenantId
+                //    });
 
-                    foreach (var reg in item.Items)
-                    {
-                        await _regulationsRep.InsertAsync(new Regulation
-                        {
-                            DisplayName = reg.RegulationName,
-                            Point = reg.Point,
-                            Type = reg.Type,
-                            TenantId = context.TenantId,
-                            Criteria = criteria
-                        });
-                    }
-                }
+                //    foreach (var reg in item.Items)
+                //    {
+                //        await _regulationsRep.InsertAsync(new Regulation
+                //        {
+                //            DisplayName = reg.RegulationName,
+                //            Point = reg.Point,
+                //            Type = reg.Type,
+                //            TenantId = context.TenantId,
+                //            Criteria = criteria
+                //        });
+                //    }
+                //}
             }
             catch (Exception ex)
             {
