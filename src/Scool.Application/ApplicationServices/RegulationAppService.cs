@@ -30,6 +30,11 @@ namespace Scool.ApplicationServices
 
         public async Task<PagingModel<RegulationForSimpleListDto>> GetSimpleListAsync()
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<RegulationForSimpleListDto>();
+            }
+
             var regulations = await _regulationsRepo
                 .Where(x => x.IsActive == true && x.CourseId == ActiveCourse.Id.Value)
                 .Include(x => x.Criteria)
@@ -48,6 +53,11 @@ namespace Scool.ApplicationServices
 
         public override async Task<PagingModel<RegulationDto>> PostPagingAsync(PageInfoRequestDto input)
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<RegulationDto>();
+            }
+
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             

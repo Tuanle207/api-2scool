@@ -74,8 +74,12 @@ namespace Scool.ApplicationServices
         [HttpGet("api/app/task-assigment/get-schedules")]
         public async Task<PagingModel<TaskAssignmentDto>> GetAllAsync(TaskAssignmentFilterDto input)
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<TaskAssignmentDto>();
+            }
             var query = _taskAssignmentRepo
-                     .WhereIf(!string.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
+                     .Where(x => x.TaskType == input.TaskType && x.CourseId == ActiveCourse.Id.Value)
                      .Include(x => x.ClassAssigned)
                      .Include(x => x.Assignee)
                      .Include(x => x.CreatorAccount)
@@ -91,8 +95,12 @@ namespace Scool.ApplicationServices
         [HttpGet("api/app/task-assigment/get-schedules-for-update")]
         public async Task<PagingModel<TaskAssignmentForUpdateDto>> GetForUpdateAsync(TaskAssignmentFilterDto input)
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<TaskAssignmentForUpdateDto>();
+            }
             var query = _taskAssignmentRepo
-                    .WhereIf(string.IsNullOrEmpty(input.TaskType), x => x.TaskType == input.TaskType)
+                    .Where(x => x.TaskType == input.TaskType && x.CourseId == ActiveCourse.Id.Value)
                     .Select(x => ObjectMapper.Map<TaskAssignment, TaskAssignmentForUpdateDto>(x));
 
             var items = await query.ToListAsync();
@@ -104,9 +112,9 @@ namespace Scool.ApplicationServices
         [HttpGet("api/app/task-assigment/assigned-class-for-dcp-report")]
         public async Task<PagingModel<ClassForSimpleListDto>> GetAssignedClassesForDcpReportAsync([FromQuery] string taskType)
         {
-            var emptyRes = new PagingModel<ClassForSimpleListDto>(new List<ClassForSimpleListDto>(), 0);
+            var emptyRes = new PagingModel<ClassForSimpleListDto>();
 
-            if (!CurrentAccount.IsAuthenticated)
+            if (!CurrentAccount.IsAuthenticated && !ActiveCourse.IsAvailable)
             {
                 return emptyRes;
             }
@@ -115,6 +123,7 @@ namespace Scool.ApplicationServices
             if (roles.Contains(AppRole.DcpManager) || roles.Contains(AppRole.Admin))
             {
                 var classItems = await _classesRepo.AsNoTracking()
+                    .Where(x => x.CourseId == ActiveCourse.Id.Value)
                     .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
                     .ToListAsync();
 
@@ -125,8 +134,7 @@ namespace Scool.ApplicationServices
             if (CurrentAccount.HasAccount && CurrentAccount.Id.HasValue)
             {
                 var items = await _taskAssignmentRepo
-                    .Where(x => x.AssigneeId == CurrentAccount.Id)
-                    .Where(x => x.TaskType == taskType)
+                    .Where(x => x.AssigneeId == CurrentAccount.Id && x.TaskType == taskType && x.CourseId == ActiveCourse.Id.Value)
                     .Include(x => x.ClassAssigned)
                     .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x.ClassAssigned))
                     .ToListAsync();

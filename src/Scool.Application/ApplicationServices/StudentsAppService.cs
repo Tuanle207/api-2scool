@@ -32,6 +32,11 @@ namespace Scool.ApplicationServices
 
         public override async Task<PagingModel<StudentDto>> PostPagingAsync(PageInfoRequestDto input)
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<StudentDto>();
+            }
+
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             var query = Repository.AsNoTracking()
@@ -65,6 +70,11 @@ namespace Scool.ApplicationServices
         [HttpGet("/api/app/students/simple-list")]
         public async Task<PagingModel<StudentForSimpleListDto>> GetSimpleListAsync([FromQuery(Name = "classId")] Guid? classId)
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<StudentForSimpleListDto>();
+            }
+
             var items = await _studentRepo
                 .WhereIf(classId.HasValue, x => x.ClassId == classId.Value)
                 .WhereIf(!classId.HasValue, x => x.CourseId == ActiveCourse.Id.Value)

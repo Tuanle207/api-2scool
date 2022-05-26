@@ -36,6 +36,10 @@ namespace Scool.ApplicationServices
 
         public override async Task<PagingModel<TeacherDto>> PostPagingAsync(PageInfoRequestDto input)
         {
+            if(!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<TeacherDto>();
+            }
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             var query = Repository.AsNoTracking()
@@ -53,6 +57,11 @@ namespace Scool.ApplicationServices
 
         public async Task<PagingModel<TeacherForSimpleListDto>> GetSimpleListAsync()
         {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<TeacherForSimpleListDto>();
+            }
+
             var items = await _teachersRepo
                 .Include(x => x.FormClass)
                 .Where(x => x.CourseId == ActiveCourse.Id.Value)
