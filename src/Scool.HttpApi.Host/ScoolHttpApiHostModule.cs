@@ -146,7 +146,8 @@ namespace Scool
                     {
                         options.TokenValidationParameters.ValidateIssuer = false;
                     } else {
-                        options.TokenValidationParameters.ValidateIssuer = true;
+                        // TODO: FIX
+                        options.TokenValidationParameters.ValidateIssuer = false;
                     }
                     options.BackchannelHttpHandler = new HttpClientHandler
                     {
