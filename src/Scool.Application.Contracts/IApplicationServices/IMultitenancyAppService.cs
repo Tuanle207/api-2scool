@@ -15,5 +15,7 @@ namespace Scool.IApplicationServices
         Task<string> GetDisplayNameFromTenantNameAsync(string name);
 
         Task<PagingModel<TenantDto>> PostPaging(PageInfoRequestDto input);
+
+        Task<PagingModel<TenantDto>> GetSimpleListAsync(PageInfoRequestDto input);
     }
 }

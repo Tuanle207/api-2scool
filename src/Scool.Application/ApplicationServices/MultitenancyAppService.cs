@@ -110,5 +110,15 @@ namespace Scool.ApplicationServices
                 .Where(x => x.Id != id && x.Name.ToLower() == lowercaseName)
                 .AnyAsync();
         }
+
+        [AllowAnonymous]
+        [HttpGet("api/app/multitenancy/simple-list")]
+        public async Task<PagingModel<TenantDto>> GetSimpleListAsync(PageInfoRequestDto input)
+        {
+            return new PagingModel<TenantDto>(await _tenantRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Select(x => ObjectMapper.Map<Tenant, TenantDto>(x))
+                .ToListAsync());
+        }
     }
 }
