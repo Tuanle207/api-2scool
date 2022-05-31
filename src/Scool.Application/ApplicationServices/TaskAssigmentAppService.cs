@@ -63,7 +63,9 @@ namespace Scool.ApplicationServices
                     ClassAssignedId = item.ClassId,
                     StartTime = item.StartTime,
                     EndTime = item.EndTime,
-                    TaskType = input.TaskType
+                    TaskType = input.TaskType,
+                    CourseId = ActiveCourse.Id.Value,
+                    TenantId = CurrentTenant.Id,
                 });
             }
 

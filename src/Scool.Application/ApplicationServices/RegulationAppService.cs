@@ -85,6 +85,7 @@ namespace Scool.ApplicationServices
 
             // Create new regulation as new updation
             var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
+            newRegulation.TenantId = CurrentTenant.Id;
             await _regulationsRepo.InsertAsync(newRegulation);
             await CurrentUnitOfWork.SaveChangesAsync();
             
@@ -97,6 +98,8 @@ namespace Scool.ApplicationServices
         public async override Task<RegulationDto> CreateAsync(CreateUpdateRegulationDto input)
         {
             var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
+            newRegulation.CourseId = ActiveCourse.Id.Value;
+            newRegulation.TenantId = CurrentTenant.Id;
             await _regulationsRepo.InsertAsync(newRegulation);
             await CurrentUnitOfWork.SaveChangesAsync();
             

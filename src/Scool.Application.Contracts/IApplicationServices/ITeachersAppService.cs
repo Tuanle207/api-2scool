@@ -17,5 +17,7 @@ namespace Scool.IApplicationServices
         Task<PagingModel<TeacherForSimpleListDto>> GetSimpleListAsync();
 
         Task<bool> IsAlreadyFormTeacher(Guid id, Guid? classId);
+
+        Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers();
     }
 }

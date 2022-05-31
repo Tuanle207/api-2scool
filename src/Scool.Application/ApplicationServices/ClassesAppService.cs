@@ -7,7 +7,6 @@ using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
@@ -28,6 +27,16 @@ namespace Scool.ApplicationServices
         public ClassesAppService(IRepository<Class, Guid> classRepo) : base(classRepo)
         {
             _classRepo = classRepo;
+        }
+
+        public override async Task<ClassDto> CreateAsync(CreateUpdateClassDto input)
+        {
+            var newClass = ObjectMapper.Map<CreateUpdateClassDto, Class>(input);
+            newClass.CourseId = ActiveCourse.Id.Value;
+            newClass.TenantId = CurrentTenant.Id;
+            await Repository.InsertAsync(newClass);
+            await CurrentUnitOfWork.SaveChangesAsync();
+            return ObjectMapper.Map<Class, ClassDto>(newClass);
         }
 
         public override async Task<PagingModel<ClassForListDto>> PostPagingAsync(PageInfoRequestDto input)

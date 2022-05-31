@@ -30,6 +30,16 @@ namespace Scool.ApplicationServices
             _studentRepo = studentRepo;
         }
 
+        public override async Task<StudentDto> CreateAsync(CreateUpdateStudentDto input)
+        {
+            var newStudent = ObjectMapper.Map<CreateUpdateStudentDto, Student>(input);
+            newStudent.CourseId = ActiveCourse.Id.Value;
+            newStudent.TenantId = CurrentTenant.Id;
+            await Repository.InsertAsync(newStudent);
+            await CurrentUnitOfWork.SaveChangesAsync();
+            return ObjectMapper.Map<Student, StudentDto>(newStudent);
+        }
+
         public override async Task<PagingModel<StudentDto>> PostPagingAsync(PageInfoRequestDto input)
         {
             if (!ActiveCourse.IsAvailable)

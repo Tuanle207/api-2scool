@@ -34,6 +34,17 @@ namespace Scool.ApplicationServices
             _classesRepo = classesRepo;
         }
 
+        public override async Task<TeacherDto> CreateAsync(CreateUpdateTeacherDto input)
+        {
+            var newTeacher = ObjectMapper.Map<CreateUpdateTeacherDto, Teacher>(input);
+            newTeacher.CourseId = ActiveCourse.Id.Value;
+            newTeacher.TenantId = CurrentTenant.Id;
+
+            await Repository.InsertAsync(newTeacher);
+            await CurrentUnitOfWork.SaveChangesAsync();
+            return ObjectMapper.Map<Teacher, TeacherDto>(newTeacher);
+        }
+
         public override async Task<PagingModel<TeacherDto>> PostPagingAsync(PageInfoRequestDto input)
         {
             if(!ActiveCourse.IsAvailable)
@@ -82,6 +93,28 @@ namespace Scool.ApplicationServices
             return await _classesRepo.Where(x => x.FormTeacherId == teacherId)
                 .Where(x => x.Id != classId)
                 .AnyAsync();
+        }
+
+        public async Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers()
+        {
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<TeacherForSimpleListDto>();
+            }
+
+            var items = await _teachersRepo
+                .Include(x => x.FormClass)
+                .Where(x => x.CourseId == ActiveCourse.Id.Value && x.FormClass == null)
+                .Select(x => ObjectMapper.Map<Teacher, TeacherForSimpleListDto>(x))
+                .ToListAsync();
+
+            var result = new PagingModel<TeacherForSimpleListDto>
+            (
+                items: items,
+                totalCount: items.Count
+            );
+
+            return result;
         }
     }
 }

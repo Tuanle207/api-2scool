@@ -280,7 +280,7 @@ namespace Scool.ApplicationServices
                 }
                 IXLWorksheet ws = wb.Worksheets.FirstOrDefault();
 
-                if (ws.ColumnsUsed().Count() != 5)
+                if (ws.ColumnsUsed().Count() != 6)
                 {
                     return;
                 }
@@ -292,14 +292,16 @@ namespace Scool.ApplicationServices
                 {
                     var index = ws.Cell(i, 1).GetValue<int>();
                     var name = ws.Cell(i, 2).GetString();
-                    var point = ws.Cell(i, 3).GetValue<int>();
-                    var type = ws.Cell(i, 4).GetString();
+                    var description = ws.Cell(i, 3).GetString();
+                    var point = ws.Cell(i, 4).GetValue<int>();
+                    var type = ws.Cell(i, 5).GetString();
                     var criteriaName = ws.Cell(i, 5).GetString();
 
                     var regulation = new RegulationDataImportDto
                     {
                         Index = index,
                         Name = name,
+                        Description = description,
                         Point = point,
                         Type = type,
                         CriteriaName = criteriaName
@@ -318,6 +320,7 @@ namespace Scool.ApplicationServices
                         var formatRegulation  = new Regulation
                         {
                             DisplayName = regulation.Name,
+                            Description = regulation.Description,
                             Point = regulation.Point,
                             Type = RegulationDataImportDto.GetRegulationType(regulation.Type),
                             TenantId = CurrentTenant.Id,
@@ -340,6 +343,67 @@ namespace Scool.ApplicationServices
                         await _criteriasRepository.InsertManyAsync(newCriterias);
                     }
                     await _regulationRepository.InsertManyAsync(formatRegulations);
+                    await CurrentUnitOfWork.SaveChangesAsync();
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError("Error when reading teacher data excel file: ", exception.Message, exception);
+            }
+        }
+
+        public async Task PostImportCriteriasData(IFormFile file)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var wb = new XLWorkbook(stream);
+
+                if (!wb.Worksheets.Any())
+                {
+                    return;
+                }
+                IXLWorksheet ws = wb.Worksheets.FirstOrDefault();
+
+                if (ws.ColumnsUsed().Count() != 3)
+                {
+                    return;
+                }
+
+                int rowCount = ws.RowsUsed().Count();
+                var criterias = new List<CriteriaDataImportDto>();
+
+                for (var i = 2; i <= rowCount; i++)
+                {
+                    var index = ws.Cell(i, 1).GetValue<int>();
+                    var name = ws.Cell(i, 2).GetString();
+                    var description = ws.Cell(i, 3).GetString();
+
+                    var criteria = new CriteriaDataImportDto
+                    {
+                        Index = index,
+                        Name = name,
+                        Description = description
+                    };
+
+                    criterias.Add(criteria);
+                }
+
+                if (criterias.Any())
+                {
+                    var formatCriterias = new List<Criteria>();
+                    foreach (var criteria in formatCriterias)
+                    {
+                        var formatCriteria = new Criteria
+                        {
+                            DisplayName = criteria.Name,
+                            Description = criteria.Description,
+                            TenantId = CurrentTenant.Id
+                        };
+                        formatCriterias.Add(formatCriteria);
+                    }
+                   
+                    await _criteriasRepository.InsertManyAsync(formatCriterias);
                     await CurrentUnitOfWork.SaveChangesAsync();
                 }
             }

@@ -14,7 +14,7 @@ using Volo.Abp.Domain.Repositories;
 
 namespace Scool.ApplicationServices
 {
-    public class CriteriaAppService : BasicCrudAppService<
+    public class CriteriasAppService : BasicCrudAppService<
         Criteria,
         Guid,
         CriteriaDto,
@@ -25,7 +25,7 @@ namespace Scool.ApplicationServices
     {
         private readonly IRepository<Criteria> _criteriasRepo;
 
-        public CriteriaAppService(IRepository<Criteria, Guid> criteriasRepo) : base(criteriasRepo)
+        public CriteriasAppService(IRepository<Criteria, Guid> criteriasRepo) : base(criteriasRepo)
         {
             _criteriasRepo = criteriasRepo;
         }
