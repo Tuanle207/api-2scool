@@ -9,6 +9,7 @@ namespace Scool.Common
         public Guid StudentId { get; set; }
         public Student Student { get; set; }
         public Guid DcpClassReportItemId { get; set; }
+        public DcpClassReportItem DcpClassReportItem { get; set; }
         public Guid? TenantId { get; set; }
     }
 }

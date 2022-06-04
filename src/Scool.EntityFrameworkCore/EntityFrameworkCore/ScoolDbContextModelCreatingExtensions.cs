@@ -46,6 +46,21 @@ namespace Scool.EntityFrameworkCore
                 b.HasNoKey();
                 b.ToView(nameof(OverallClassRanking), ScoolConsts.DbSchema);
             });
+            builder.Entity<ClassFaultDetail>(b =>
+            {
+                b.HasNoKey();
+                b.ToView(nameof(ClassFaultDetail), ScoolConsts.DbSchema);
+            });
+            builder.Entity<FaultDetail>(b =>
+            {
+                b.HasNoKey();
+                b.ToView(nameof(FaultDetail), ScoolConsts.DbSchema);
+            });
+            builder.Entity<StudentFaultDetail>(b =>
+            {
+                b.HasNoKey();
+                b.ToView(nameof(StudentFaultDetail), ScoolConsts.DbSchema);
+            });
             //builder.Entity<LrClassRanking>(b =>
             //{
             //    b.HasNoKey();
@@ -157,7 +172,7 @@ namespace Scool.EntityFrameworkCore
             builder.Entity<DcpReport>(b =>
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(DcpReport), ScoolConsts.DbSchema);
-                b.HasMany(b => b.DcpClassReports).WithOne().HasForeignKey(f => f.DcpReportId);
+                b.HasMany(b => b.DcpClassReports).WithOne(x => x.DcpReport).HasForeignKey(f => f.DcpReportId);
                 b.HasOne(x => x.CreatorAccount).WithMany().HasForeignKey(x => x.CreatorId);
                 b.ConfigureByConvention();
             });
@@ -165,7 +180,7 @@ namespace Scool.EntityFrameworkCore
             builder.Entity<DcpClassReport>(b =>
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(DcpClassReport), ScoolConsts.DbSchema);
-                b.HasMany(b => b.Faults).WithOne().HasForeignKey(f => f.DcpClassReportId);
+                b.HasMany(b => b.Faults).WithOne(x => x.DcpClassReport).HasForeignKey(f => f.DcpClassReportId);
                 b.ConfigureByConvention();
             });
 
@@ -173,7 +188,7 @@ namespace Scool.EntityFrameworkCore
             {
                 b.ToTable(ScoolConsts.DbTablePrefix + nameof(DcpClassReportItem), ScoolConsts.DbSchema);
                 b.HasOne(b => b.Regulation).WithMany().HasForeignKey(f => f.RegulationId).OnDelete(DeleteBehavior.NoAction);
-                b.HasMany(b => b.RelatedStudents).WithOne().HasForeignKey(f => f.DcpClassReportItemId);
+                b.HasMany(b => b.RelatedStudents).WithOne(x => x.DcpClassReportItem).HasForeignKey(f => f.DcpClassReportItemId);
                 b.ConfigureByConvention();
             });
 

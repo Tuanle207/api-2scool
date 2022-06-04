@@ -18,6 +18,7 @@ namespace Scool.Common
         }
 
         public Guid DcpClassReportId { get; set; }
+        public DcpClassReport DcpClassReport { get; set; }
         public Guid RegulationId { get; set; }
         public Regulation Regulation { get; set; }
         public int PenaltyPoint { get; set; }

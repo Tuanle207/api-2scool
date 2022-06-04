@@ -8,6 +8,7 @@ namespace Scool.Common
     public class DcpClassReport : Entity<Guid>, IMultiTenant
     {
         public Guid DcpReportId { get; set; }
+        public DcpReport DcpReport { get; set; }
         public Guid ClassId { get; set; }
         public Class Class { get; set; }
         public int PenaltyTotal { get; set; }

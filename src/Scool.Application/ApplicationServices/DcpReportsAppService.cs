@@ -295,7 +295,7 @@ namespace Scool.ApplicationServices
                     fault.Regulation = uniqueRegulations.FirstOrDefault(x => x.Id == fault.RegulationId);
                     foreach (var student in fault.RelatedStudents)
                     {
-                        student.Student = uniqueStudents.FirstOrDefault(x => x.Id == student.Id);
+                        student.Student = uniqueStudents.FirstOrDefault(x => x.Id == student.StudentId);
                     }
                 }
             }

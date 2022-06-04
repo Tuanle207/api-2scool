@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
 using Scool.Common;
@@ -24,12 +25,31 @@ namespace Scool.ApplicationServices
     public class StatisticsAppService : ScoolAppService, IStatisticsAppService
     {
         private readonly IRepository<DcpReport, Guid> _dcpReportsRepo;
+        private readonly IRepository<DcpClassReport, Guid> _dcpClassReportsRepo;
+        private readonly IRepository<DcpClassReportItem, Guid> _dcpReportItemsRepo;
+        private readonly IRepository<DcpStudentReport, Guid> _dcpStudentsRepo;
+        private readonly IRepository<Student, Guid> _studentsRepo;
+        private readonly IRepository<Class, Guid> _classesRepo;
+        private readonly IRepository<Regulation, Guid> _regulationsRepo;
         private readonly ScoolDbContext _context;
 
-        public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo, ScoolDbContext context)
+        public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo,
+            IRepository<DcpClassReport, Guid> dcpClassReportsRepo,
+            IRepository<DcpClassReportItem, Guid> dcpReportItemsRepo,
+            IRepository<DcpStudentReport, Guid> dcpStudentsRepo,
+            ScoolDbContext context,
+            IRepository<Student, Guid> studentsRepo,
+            IRepository<Class, Guid> classesRepo,
+            IRepository<Regulation, Guid> regulationsRepo)
         {
             _dcpReportsRepo = dcpReportsRepo;
+            _dcpClassReportsRepo = dcpClassReportsRepo;
+            _dcpReportItemsRepo = dcpReportItemsRepo;
+            _dcpStudentsRepo = dcpStudentsRepo;
             _context = context;
+            _studentsRepo = studentsRepo;
+            _classesRepo = classesRepo;
+            _regulationsRepo = regulationsRepo;
         }
 
         [Authorize(StatsPermissions.Statistics)]
@@ -507,6 +527,171 @@ namespace Scool.ApplicationServices
 
 
             return result;
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<PagingModel<ClassFaultDetail>> GetClassFaultDetails([FromRoute(Name = "classId")] Guid classId, TimeFilterDto filter)
+        {
+            var classReportIdTimes = await _dcpClassReportsRepo.AsNoTracking()
+                .Include(x => x.DcpReport)
+                .Where(x => x.ClassId == classId && x.DcpReport.Status == DcpReportStatus.Approved && x.DcpReport.CreationTime >= filter.StartTime && x.DcpReport.CreationTime <= filter.EndTime)
+                .Select(x => new { x.Id, x.DcpReport.CreationTime })
+                .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
+
+            var classReportIds = classReportIdTimes.Keys.ToList();
+
+            var reportItems = await _dcpReportItemsRepo.AsNoTracking()
+                .Include(x => x.RelatedStudents)
+                .Where(x => classReportIds.Contains(x.DcpClassReportId))
+                .ToListAsync();
+
+            var uniqueRegulationIds = reportItems.Select(x => x.RegulationId).ToList();
+            var uniqueStudentIds = reportItems.SelectMany(x => x.RelatedStudents).Select(x => x.StudentId).ToList();
+
+            var regulations = await _regulationsRepo.AsNoTracking()
+                .Include(x => x.Criteria)
+                .Where(x => uniqueRegulationIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
+                .ToListAsync();
+
+            var students = await _studentsRepo.AsNoTracking()
+                .Where(x => uniqueStudentIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Student, StudentForSimpleListDto>(x))
+                .ToListAsync();
+
+            var items = new List<ClassFaultDetail>();
+
+            foreach (var reportItem in reportItems)
+            {
+                var regulation = regulations.FirstOrDefault(x => x.Id == reportItem.RegulationId);
+                var reportIdTime = classReportIdTimes.FirstOrDefault(x => x.Key == reportItem.DcpClassReportId);
+
+                var reportStudentIds = reportItem.RelatedStudents.Select(x => x.StudentId).ToList();
+                var reportstudents = students.Where(x => reportStudentIds.Contains(x.Id)).ToList();
+
+                items.Add(new ClassFaultDetail
+                {
+                    Id = reportItem.Id,
+                    RegulationId = reportItem.RegulationId,
+                    RegulationName = regulation.Name,
+                    CriteriaName = regulation.Criteria.Name,
+                    CreationTime = reportIdTime.Value,
+                    PenaltyPoints = reportItem.PenaltyPoint,
+                    StudentNames = reportstudents.Select(x => x.Name).JoinAsString(", "),
+                });
+            }
+
+            return new PagingModel<ClassFaultDetail>(items
+                .OrderBy(x => x.CreationTime)
+                .ThenBy(x => x.RegulationName)
+                );
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<PagingModel<FaultDetail>> GetRegulationFaultDetails([FromRoute(Name = "regulationId")] Guid regulationId, TimeFilterDto filter)
+        {
+            var reportItemIdTimes = await _dcpReportItemsRepo.AsNoTracking()
+                .Include(x => x.DcpClassReport)
+                    .ThenInclude(x => x.DcpReport)
+                .Where(x => x.RegulationId == regulationId && x.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReport.DcpReport.CreationTime >= filter.StartTime && x.DcpClassReport.DcpReport.CreationTime <= filter.EndTime)
+                .Select(x => new { x.Id, x.DcpClassReport.DcpReport.CreationTime })
+                .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
+
+            var reportItemIds = reportItemIdTimes.Keys.ToList();
+
+            var reportItems = await _dcpReportItemsRepo.AsNoTracking()
+                .Include(x => x.RelatedStudents)
+                .Include(x => x.DcpClassReport)
+                .Where(x => reportItemIds.Contains(x.Id))
+                .ToListAsync();
+
+            var uniqueStudentIds = reportItems.SelectMany(x => x.RelatedStudents).Select(x => x.StudentId).ToList();
+            var uniqueClassIds = reportItems.Select(x => x.DcpClassReport.ClassId).ToList();
+
+            var students = await _studentsRepo.AsNoTracking()
+                .Include(x => x.Class)
+                .Where(x => uniqueStudentIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Student, StudentDto>(x))
+                .ToListAsync();
+
+            var classes = await _classesRepo.AsNoTracking()
+                .Where(x => uniqueClassIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
+                .ToListAsync();
+
+            var items = new List<FaultDetail>();
+
+            foreach (var reportItem in reportItems)
+            {
+                var reportIdTime = reportItemIdTimes.FirstOrDefault(x => x.Key == reportItem.Id);
+
+                var reportStudentIds = reportItem.RelatedStudents.Select(x => x.StudentId).ToList();
+                var reportstudents = students.Where(x => reportStudentIds.Contains(x.Id)).ToList();
+                var className = classes.FirstOrDefault(x => x.Id == reportItem.DcpClassReport.ClassId).Name;
+
+                items.Add(new FaultDetail
+                {
+                    Id = reportItem.Id,
+                    CreationTime = reportIdTime.Value,
+                    PenaltyPoints = reportItem.PenaltyPoint,
+                    StudentNames = reportstudents.Select(x => x.Name).JoinAsString(", "),
+                    ClassName = className
+                });
+            }
+
+            return new PagingModel<FaultDetail>(items
+                .OrderBy(x => x.CreationTime)
+                .ThenBy(x => x.PenaltyPoints)
+                );
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<PagingModel<StudentFaultDetail>> GetStudentFaultDetails([FromRoute(Name = "studentId")] Guid studentId, TimeFilterDto filter)
+        {
+            var reportItemIdTimes = await _dcpStudentsRepo.AsNoTracking()
+                .Include(x => x.DcpClassReportItem)
+                    .ThenInclude(x => x.DcpClassReport)
+                        .ThenInclude(x => x.DcpReport)
+                .Where(x => x.StudentId == studentId && x.DcpClassReportItem.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime >= filter.StartTime && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime <= filter.EndTime)
+                .Select(x => new { x.DcpClassReportItem.Id, x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime })
+                .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
+
+            var reportItemIds = reportItemIdTimes.Keys.ToList();
+
+            var reportItems = await _dcpReportItemsRepo.AsNoTracking()
+                .Include(x => x.RelatedStudents)
+                .Where(x => reportItemIds.Contains(x.Id))
+                .ToListAsync();
+
+            var uniqueRegulationIds = reportItems.Select(x => x.RegulationId).ToList();
+            var regulations = await _regulationsRepo.AsNoTracking()
+                .Include(x => x.Criteria)
+                .Where(x => uniqueRegulationIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
+                .ToListAsync();
+
+            var items = new List<StudentFaultDetail>();
+
+            foreach (var reportItem in reportItems)
+            {
+                var reportIdTime = reportItemIdTimes.FirstOrDefault(x => x.Key == reportItem.Id);
+                var regulation = regulations.FirstOrDefault(x => x.Id == reportItem.RegulationId);
+
+                items.Add(new StudentFaultDetail
+                {
+                    Id = reportItem.Id,
+                    CreationTime = reportIdTime.Value,
+                    PenaltyPoints = reportItem.PenaltyPoint,
+                    RegulationName = regulation.Name,
+                    CriteriaName = regulation.Name,
+                    Count = 1
+                });
+            }
+
+            return new PagingModel<StudentFaultDetail>(items
+                .OrderBy(x => x.CreationTime)
+                .ThenBy(x => x.PenaltyPoints)
+                );
         }
 
         private string FilterCurrentTenantSql(string expression)
