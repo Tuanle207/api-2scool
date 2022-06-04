@@ -34,7 +34,7 @@ namespace Scool.ApplicationServices
     {
         private readonly IRepository<LessonsRegister, Guid> _leRepo;
         private readonly IRepository<LessonRegisterPhotos, Guid> _lePhotoRepo;
-        private readonly IRepository<AppUser, Guid> _usersRepo;
+        private readonly IRepository<Class, Guid> _classesRepo;
         private readonly IFileHandler _fileHandler;
         private readonly IGuidGenerator _guidGenerator;
 
@@ -42,14 +42,14 @@ namespace Scool.ApplicationServices
             IRepository<LessonsRegister, Guid> leRepo,
             IRepository<LessonRegisterPhotos, Guid> lePhotoRepo,
             IFileHandler fileHandler,
-            IGuidGenerator guidGenerator, 
-            IRepository<AppUser, Guid> usersRepo) : base(leRepo)
+            IGuidGenerator guidGenerator,
+            IRepository<Class, Guid> classesRepo) : base(leRepo)
         {
             _leRepo = leRepo;
             _lePhotoRepo = lePhotoRepo;
             _fileHandler = fileHandler;
             _guidGenerator = guidGenerator;
-            _usersRepo = usersRepo;
+            _classesRepo = classesRepo;
         }
 
         [Authorize(ReportsPermissions.CreateNewLRReport)]
@@ -59,13 +59,18 @@ namespace Scool.ApplicationServices
             var photoUrl = await _fileHandler.SaveFileAsync(input.Photo);
 
             // save LR Report
+            var reportedClass = await _classesRepo.AsNoTracking().FirstOrDefaultAsync(x => x.Id == input.ClassId);
+
             var report = await _leRepo.InsertAsync(new LessonsRegister
             {
                 ClassId = input.ClassId,
                 TotalPoint = input.TotalPoint,
                 AbsenceNo = input.AbsenceNo,
-                TenantId = CurrentTenant.Id
+                CourseId = ActiveCourse.Id.Value,
+                TenantId = CurrentTenant.Id,
+                ReportedClassDisplayName = reportedClass?.Name
             });
+
 
             await CurrentUnitOfWork.SaveChangesAsync();
 
@@ -73,7 +78,7 @@ namespace Scool.ApplicationServices
             {
                 LessonRegisterId = report.Id,
                 Photo = photoUrl,
-                TenantId = CurrentTenant.Id
+                TenantId = CurrentTenant.Id,
             });
 
             var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
@@ -81,6 +86,50 @@ namespace Scool.ApplicationServices
             {
                 photoUrl
             };
+            return result;
+        }
+
+        [Authorize(ReportsPermissions.UpdateLRReport)]
+        public async override Task<LRReportDto> UpdateAsync(Guid id, [FromForm] CreateUpdateLRReportDto input)
+        {
+            var oReport = await _leRepo
+                .Include(x => x.AttachedPhotos)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            oReport.TotalPoint = input.TotalPoint;
+            oReport.AbsenceNo = input.AbsenceNo;
+            oReport.TenantId = CurrentTenant.Id;
+
+            // save LR Report
+            var report = await _leRepo.UpdateAsync(oReport);
+
+            var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
+
+            if (input.Photo != null)
+            {
+                // delete old photo
+                if (oReport.AttachedPhotos.Count > 0)
+                {
+                    var photo = oReport.AttachedPhotos.FirstOrDefault();
+                    _fileHandler.RemoveFile(photo.Photo);
+                    await _lePhotoRepo.DeleteAsync(photo.Id);
+                }
+
+                // save photo
+                var photoUrl = await _fileHandler.SaveFileAsync(input.Photo);
+                await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
+                {
+                    LessonRegisterId = oReport.Id,
+                    Photo = photoUrl,
+                    TenantId = CurrentTenant.Id,
+                });
+
+                result.AttachedPhotos = new List<string>()
+                {
+                    photoUrl
+                };
+            }
+
             return result;
         }
 
@@ -125,7 +174,12 @@ namespace Scool.ApplicationServices
             var pageSize = input.PageSize > 0 ? input.PageSize : 10;
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
-            var query = _leRepo.Filter(input.Filter);
+            var query = _leRepo.AsNoTracking().Filter(input.Filter);
+
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<LRReportDto>();
+            }
 
             var totalCount = await query.CountAsync();
 
@@ -133,10 +187,9 @@ namespace Scool.ApplicationServices
 
             query = query.Page(pageIndex, pageSize);
 
-            query = query.AsNoTracking()
+            query = query
                 .Include(x => x.CreatorAccount)
-                .Include(x => x.AttachedPhotos)
-                .Include(x => x.Class);
+                .Include(x => x.AttachedPhotos);
 
             var items = await query.Select(x => ObjectMapper.Map<LessonsRegister, LRReportDto>(x))
                 .ToListAsync();
@@ -177,53 +230,6 @@ namespace Scool.ApplicationServices
 
 
             return new PagingModel<LRReportDto>(items, totalCount, pageIndex, pageSize);
-        }
-
-        [Authorize(ReportsPermissions.UpdateLRReport)]
-        public async override Task<LRReportDto> UpdateAsync(Guid id, [FromForm] CreateUpdateLRReportDto input)
-        {
-
-            var oReport = await _leRepo
-                .AsQueryable()
-                .Include(x => x.AttachedPhotos)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            oReport.ClassId = input.ClassId;
-            oReport.TotalPoint = input.TotalPoint;
-            oReport.AbsenceNo = input.AbsenceNo;
-            oReport.TenantId = CurrentTenant.Id;
-
-            // save LR Report
-            var report = await _leRepo.UpdateAsync(oReport);
-
-            var result = ObjectMapper.Map<LessonsRegister, LRReportDto>(report);
-
-            if (input.Photo != null)
-            {
-                // delete old photo
-                if (oReport.AttachedPhotos.Count > 0)
-                {
-                    var photo = oReport.AttachedPhotos.FirstOrDefault();
-                    _fileHandler.RemoveFile(photo.Photo);
-                    await _lePhotoRepo.DeleteAsync(photo.Id);
-                }
-
-                // save photo
-                var photoUrl = await _fileHandler.SaveFileAsync(input.Photo);
-                await _lePhotoRepo.InsertAsync(new LessonRegisterPhotos
-                {
-                    LessonRegisterId = oReport.Id,
-                    Photo = photoUrl,
-                    TenantId = CurrentTenant.Id,
-                });
-
-                result.AttachedPhotos = new List<string>()
-                {
-                    photoUrl
-                };
-            }
-            
-            return result;
         }
 
         [Authorize(ReportsPermissions.RemoveLRReport)]

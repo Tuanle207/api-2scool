@@ -34,7 +34,7 @@ namespace Scool.ApplicationServices
         private readonly IRepository<DcpStudentReport, Guid> _dcpStudentReportsRepo;
         private readonly IRepository<Student, Guid> _studentsRepo;
         private readonly IRepository<Regulation, Guid> _regulationsRepo;
-        private readonly IRepository<AppUser, Guid> _usersRepo;
+        private readonly IRepository<Class, Guid> _classesRepo;
         private readonly IGuidGenerator _guidGenerator;
         private readonly INotificationService _notificationService;
 
@@ -46,7 +46,7 @@ namespace Scool.ApplicationServices
             IRepository<DcpStudentReport, Guid> dcpStudentReportsRepo,
             IRepository<Student, Guid> studentsRepo,
             IRepository<Regulation, Guid> regulationsRepo,
-            IRepository<AppUser, Guid> usersRepo,
+            IRepository<Class, Guid> classesRepo,
             IGuidGenerator guidGenerator,
             INotificationService notificationService) : base(dcpReportsRepo)
         {
@@ -56,8 +56,8 @@ namespace Scool.ApplicationServices
             _dcpStudentReportsRepo = dcpStudentReportsRepo;
             _studentsRepo = studentsRepo;
             _regulationsRepo = regulationsRepo;
-            _usersRepo = usersRepo;
             _guidGenerator = guidGenerator;
+            _classesRepo = classesRepo;
             _notificationService = notificationService;
 
             DeletePolicyName = ReportsPermissions.RemoveDcpReport;
@@ -68,13 +68,20 @@ namespace Scool.ApplicationServices
         {
             var report = new DcpReport(_guidGenerator.Create());
             report.TenantId = CurrentTenant.Id;
+            report.CourseId = ActiveCourse.Id.Value;
+
+            var uniqueRegulationIds = input.DcpClassReports.SelectMany(x => x.Faults).Distinct().Select(x => x.RegulationId).ToList();
+            var regulations = await _regulationsRepo.AsNoTracking().Where(x => uniqueRegulationIds.Contains(x.Id)).ToListAsync();
+            var classIds = input.DcpClassReports.Select(x => x.ClassId).ToList();
+            var classNames = await _classesRepo.AsNoTracking().Where(x => classIds.Contains(x.Id)).Select(x => x.Name).ToListAsync();
+            report.ReportedClassDisplayNames = string.Join(", ", classNames);
 
             // report on each class
             IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                int penalty = 0;
+                int penaltyTotal = 0;
 
                 dcpClassReport.TenantId = CurrentTenant.Id;
                 dcpClassReport.DcpReportId = report.Id;
@@ -82,36 +89,31 @@ namespace Scool.ApplicationServices
 
                 var faults = cls.Faults;
                 // regulations broken
-                foreach (var reg in faults)
+                foreach (var reportItem in faults)
                 {
-                    IList<Guid> listStudentId = reg.RelatedStudentIds;
+                    IList<Guid> listStudentId = reportItem.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.TenantId = CurrentTenant.Id;
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
-                    dcpClassReportItem.RegulationId = reg.RegulationId;
+                    dcpClassReportItem.RegulationId = reportItem.RegulationId;
 
                     // accumulate penalty
-                    Regulation regulation = await _regulationsRepo
-                        .Where(x => x.Id == reg.RegulationId)
-                        .FirstOrDefaultAsync();
-                    int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
-                    penalty += regulation.Point * mutiply;
+                    Regulation regulation = regulations.FirstOrDefault(x => x.Id == reportItem.RegulationId);
+                    int mutiply = regulation.Type == RegulationType.Student && listStudentId.Count > 0 ? listStudentId.Count : 1;
+                    var penalty = regulation.Point * mutiply;
+                    penaltyTotal += penalty;
+                    dcpClassReportItem.PenaltyPoint = penaltyTotal;
 
-                    // student breaking the regulations
-                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
-                        .ToListAsync();
-
-                    foreach (var stdnt in students)
+                    // students violating the regulations
+                    var reportedStudents = listStudentId.Select(studentId => new DcpStudentReport
                     {
-                        var studentReported = await _dcpStudentReportsRepo.InsertAsync(new DcpStudentReport
-                        {
-                            DcpClassReportItemId = dcpClassReportItem.Id,
-                            StudentId = stdnt.Id,
-                            TenantId = CurrentTenant.Id
-                        });
-                        // add student report to dcpClassReportItem
-                        dcpClassReportItem.RelatedStudents.Add(studentReported);
-                    }
+                        DcpClassReportItemId = dcpClassReportItem.Id,
+                        StudentId = studentId,
+                        TenantId = CurrentTenant.Id
+                    }).ToList();
+                    dcpClassReportItem.RelatedStudents = reportedStudents;
+                    await _dcpStudentReportsRepo.InsertManyAsync(reportedStudents);
+
                     // add dcpClassReportItem report to dcpClassReport
                     dcpClassReport.Faults.Add(
                         await _dcpClassReportItemsRepo.InsertAsync(dcpClassReportItem)
@@ -119,7 +121,7 @@ namespace Scool.ApplicationServices
                 }
 
                 // save penalty point for class
-                dcpClassReport.PenaltyTotal = penalty;
+                dcpClassReport.PenaltyTotal = penaltyTotal;
 
                 // add dcpClassReportItem report to dcpClassReport
                 report.DcpClassReports.Add(
@@ -146,66 +148,69 @@ namespace Scool.ApplicationServices
             // replace with new report with the same ID (like the way we are doing HTTP PUT)
             var report = new DcpReport(id);
             report.TenantId = CurrentTenant.Id;
+            report.CourseId = ActiveCourse.Id.Value;
+            report.CreationTime = oldReport.CreationTime;
+
+            var uniqueRegulationIds = input.DcpClassReports.SelectMany(x => x.Faults).Distinct().Select(x => x.RegulationId).ToList();
+            var regulations = await _regulationsRepo.AsNoTracking().Where(x => uniqueRegulationIds.Contains(x.Id)).ToListAsync();
+            var classIds = input.DcpClassReports.Select(x => x.ClassId).ToList();
+            var classNames = await _classesRepo.AsNoTracking().Where(x => classIds.Contains(x.Id)).Select(x => x.Name).ToListAsync();
+            report.ReportedClassDisplayNames = string.Join(", ", classNames);
+
             // report on each class
             IList<CreateUpdateDcpClassReportDto> clsReports = input.DcpClassReports;
             foreach (var cls in clsReports)
             {
                 var dcpClassReport = new DcpClassReport(_guidGenerator.Create());
-                int penalty = 0;
+                int penaltyTotal = 0;
+
+                dcpClassReport.TenantId = CurrentTenant.Id;
                 dcpClassReport.DcpReportId = report.Id;
                 dcpClassReport.ClassId = cls.ClassId;
-                dcpClassReport.TenantId = CurrentTenant.Id;
 
                 var faults = cls.Faults;
                 // regulations broken
-                foreach (var reg in faults)
+                foreach (var reportItem in faults)
                 {
-                    IList<Guid> listStudentId = reg.RelatedStudentIds;
+                    IList<Guid> listStudentId = reportItem.RelatedStudentIds;
                     var dcpClassReportItem = new DcpClassReportItem(_guidGenerator.Create());
                     dcpClassReportItem.TenantId = CurrentTenant.Id;
                     dcpClassReportItem.DcpClassReportId = dcpClassReport.Id;
-                    dcpClassReportItem.RegulationId = reg.RegulationId;
+                    dcpClassReportItem.RegulationId = reportItem.RegulationId;
 
                     // accumulate penalty
-                    Regulation regulation = await _regulationsRepo
-                        .Where(x => x.Id == reg.RegulationId)
-                        .FirstOrDefaultAsync();
+                    Regulation regulation = regulations.FirstOrDefault(x => x.Id == reportItem.RegulationId);
                     int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
-                    penalty += regulation.Point * mutiply;
+                    var penalty = regulation.Point * mutiply;
+                    penaltyTotal += penalty;
+                    dcpClassReportItem.PenaltyPoint = penaltyTotal;
 
-                    // student breaking the regulations
-                    IList<Student> students = await _studentsRepo.Where(x => listStudentId.Contains(x.Id))
-                        .ToListAsync();
-
-                    foreach (var stdnt in students)
+                    // students violating the regulations
+                    var reportedStudents = listStudentId.Select(studentId => new DcpStudentReport
                     {
-                        var studentReported = await _dcpStudentReportsRepo.InsertAsync(new DcpStudentReport
-                        {
-                            DcpClassReportItemId = dcpClassReportItem.Id,
-                            StudentId = stdnt.Id,
-                            TenantId = CurrentTenant.Id
-                        });
-                        // add student report to dcpClassReportItem
-                        dcpClassReportItem.RelatedStudents.Add(studentReported);
-                    }
-
-                    // save penalty point for class
-                    dcpClassReport.PenaltyTotal = penalty;
+                        DcpClassReportItemId = dcpClassReportItem.Id,
+                        StudentId = studentId,
+                        TenantId = CurrentTenant.Id
+                    }).ToList();
+                    dcpClassReportItem.RelatedStudents = reportedStudents;
+                    await _dcpStudentReportsRepo.InsertManyAsync(reportedStudents);
 
                     // add dcpClassReportItem report to dcpClassReport
                     dcpClassReport.Faults.Add(
                         await _dcpClassReportItemsRepo.InsertAsync(dcpClassReportItem)
                     );
                 }
+
+                // save penalty point for class
+                dcpClassReport.PenaltyTotal = penaltyTotal;
+
                 // add dcpClassReportItem report to dcpClassReport
                 report.DcpClassReports.Add(
                     await _dcpClassReportsRepo.InsertAsync(dcpClassReport)
                 );
             }
 
-            report.CreationTime = oldReport.CreationTime;
-
-            var dcpReport = await _dcpReportsRepo.InsertAsync(report);
+            var dcpReport = await _dcpReportsRepo.InsertAsync(report, autoSave: true);
 
             return ObjectMapper.Map<DcpReport, DcpReportDto>(dcpReport);
         }
@@ -248,24 +253,71 @@ namespace Scool.ApplicationServices
         [Authorize(ReportsPermissions.GetDcpReportDetail)]
         public async override Task<DcpReportDto> GetAsync(Guid id)
         {
-            var item = await _dcpReportsRepo
-                .AsNoTracking()
+            var report = await _dcpReportsRepo.AsNoTracking()
                 .Where(x => x.Id == id)
-                .Include(x => x.CreatorAccount)
-                .Include(e => e.DcpClassReports)
-                    .ThenInclude(e => e.Class)
-                .Include(e => e.DcpClassReports)
-                    .ThenInclude(e => e.Faults)
-                    .ThenInclude(e => e.RelatedStudents)
-                    .ThenInclude(e => e.Student)
-                .Include(e => e.DcpClassReports)
-                    .ThenInclude(e => e.Faults)
-                    .ThenInclude(e => e.Regulation)
-                    .ThenInclude(e => e.Criteria)
                 .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .FirstOrDefaultAsync();
 
-            return item;
+            report.DcpClassReports = await _dcpClassReportsRepo.AsNoTracking()
+                .Include(x => x.Faults)
+                    .ThenInclude(x => x.RelatedStudents)
+                .Where(x => x.DcpReportId == id)
+                .Select(x => ObjectMapper.Map<DcpClassReport, DcpClassReportDto>(x))
+                .ToListAsync();
+
+            var faults = report.DcpClassReports.SelectMany(x => x.Faults);
+
+            var uniqueClassIds = report.DcpClassReports.Select(x => x.ClassId).ToList();
+            var uniqueRegulationIds = faults.Select(x => x.RegulationId).Distinct().ToList();
+            var uniqueStudentIds = faults.SelectMany(x => x.RelatedStudents).Select(x => x.StudentId).Distinct().ToList();
+
+            var uniqueRegulations = await _regulationsRepo.AsNoTracking()
+                .Include(x => x.Criteria)
+                .Where(x => uniqueRegulationIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
+                .ToListAsync();
+
+            var uniqueStudents = await _studentsRepo.AsNoTracking()
+                .Where(x => uniqueStudentIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Student, StudentForSimpleListDto>(x))
+                .ToListAsync();
+
+            var uniqueClasses = await _classesRepo.AsNoTracking()
+                .Where(x => uniqueClassIds.Contains(x.Id))
+                .Select(x => ObjectMapper.Map<Class, ClassForSimpleListDto>(x))
+                .ToListAsync();
+
+            foreach (var classReport in report.DcpClassReports)
+            {
+                classReport.Class = uniqueClasses.FirstOrDefault(x => x.Id == classReport.ClassId);
+                foreach (var fault in classReport.Faults)
+                {
+                    fault.Regulation = uniqueRegulations.FirstOrDefault(x => x.Id == fault.RegulationId);
+                    foreach (var student in fault.RelatedStudents)
+                    {
+                        student.Student = uniqueStudents.FirstOrDefault(x => x.Id == student.Id);
+                    }
+                }
+            }
+
+            //var item = await _dcpReportsRepo
+            //    .AsNoTracking()
+            //    .Where(x => x.Id == id)
+            //    .Include(x => x.CreatorAccount)
+            //    .Include(e => e.DcpClassReports)
+            //        .ThenInclude(e => e.Class)
+            //    .Include(e => e.DcpClassReports)
+            //        .ThenInclude(e => e.Faults)
+            //        .ThenInclude(e => e.RelatedStudents)
+            //        .ThenInclude(e => e.Student)
+            //    .Include(e => e.DcpClassReports)
+            //        .ThenInclude(e => e.Faults)
+            //        .ThenInclude(e => e.Regulation)
+            //        .ThenInclude(e => e.Criteria)
+            //    .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
+            //    .FirstOrDefaultAsync();
+
+            return report;
         }
 
         [Obsolete]
@@ -314,14 +366,17 @@ namespace Scool.ApplicationServices
         [Authorize(ReportsPermissions.UpdateDcpReport)]
         public async Task<CreateUpdateDcpReportDto> GetUpdateAsync(Guid id)
         {
-            var item = await _dcpReportsRepo
-               .Where(x => x.Id == id)
-               .Include(e => e.DcpClassReports)
-               .ThenInclude(e => e.Faults)
+            var items = await _dcpClassReportsRepo
+               .Include(e => e.Faults)
                .ThenInclude(e => e.RelatedStudents)
-               .Select(x => ObjectMapper.Map<DcpReport, CreateUpdateDcpReportDto>(x))
-               .FirstOrDefaultAsync();
-            return item;
+               .Where(x => x.Id == id)
+               .Select(x => ObjectMapper.Map<DcpClassReport, CreateUpdateDcpClassReportDto>(x))
+               .ToListAsync();
+
+            return new CreateUpdateDcpReportDto
+            {
+                DcpClassReports = items
+            };
         }
 
         [Authorize(ReportsPermissions.GetMyDcpReport)]
@@ -331,14 +386,14 @@ namespace Scool.ApplicationServices
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
             // Create query with filters
-            var query = _dcpReportsRepo.Filter(input.Filter);
+            var query = _dcpReportsRepo.AsNoTracking().Filter(input.Filter);
 
             // Filter by current user
-            if (!CurrentAccount.HasAccount)
+            if (!CurrentAccount.HasAccount || !ActiveCourse.IsAvailable)
             {
                 return new PagingModel<DcpReportDto>();
             }
-            query = query.Where(x => x.CreatorId == CurrentAccount.Id.Value);
+            query = query.Where(x => x.CreatorId == CurrentAccount.Id.Value && x.CourseId == ActiveCourse.Id);
 
             // Count total count
             int totalCount = await query.CountAsync();
@@ -348,12 +403,6 @@ namespace Scool.ApplicationServices
 
             // Pagination
             query = query.Page(pageIndex, pageSize);
-
-            // Include navigation properties
-            query = query
-                .AsNoTracking()
-                .Include(e => e.DcpClassReports)
-                .ThenInclude(e => e.Class);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
@@ -369,7 +418,13 @@ namespace Scool.ApplicationServices
             var pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
 
             // Create query with filters
-            var query = _dcpReportsRepo.Filter(input.Filter);
+            var query = _dcpReportsRepo.AsNoTracking().Filter(input.Filter);
+
+            if (!ActiveCourse.IsAvailable)
+            {
+                return new PagingModel<DcpReportDto>();
+            }
+            query = query.Where(x => x.CourseId == ActiveCourse.Id);
 
             int totalCount = await query.CountAsync();
 
@@ -380,11 +435,7 @@ namespace Scool.ApplicationServices
             query = query.Page(pageIndex, pageSize);
 
             // Include navigation properties
-            query = query
-                .AsNoTracking()
-                .Include(x => x.CreatorAccount)
-                .Include(x => x.DcpClassReports)
-                    .ThenInclude(x => x.Class);
+            query = query.Include(x => x.CreatorAccount);
 
             // Call query with projection
             var items = await query.Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))

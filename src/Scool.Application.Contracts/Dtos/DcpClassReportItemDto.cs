@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Volo.Abp.Domain.Entities;
+using Volo.Abp.Application.Dtos;
 
 namespace Scool.Dtos
 {
-    public class DcpClassReportItemDto : Entity<Guid>
+    public class DcpClassReportItemDto : EntityDto<Guid>
     {
         public Guid DcpClassReportId { get; set; }
         public Guid RegulationId { get; set; }
+        public int PenaltyPoint { get; set; }
         public RegulationForSimpleListDto Regulation { get; set; }
         public ICollection<DcpStudentReportDto> RelatedStudents { get; set; }
     }

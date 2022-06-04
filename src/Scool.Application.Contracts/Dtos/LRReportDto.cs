@@ -9,6 +9,7 @@ namespace Scool.Dtos
         public int TotalPoint { get; set; }
         public int AbsenceNo { get; set; }
         public ClassForSimpleListDto Class { get; set; }
+        public string ReportedClassDisplayName { get; set; }
         public List<string> AttachedPhotos { get; set; }
         public string Status { get; set; }
         public DateTime CreationTime { get; set; }

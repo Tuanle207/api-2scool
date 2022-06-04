@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scool.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore;
@@ -10,9 +11,10 @@ using Volo.Abp.EntityFrameworkCore;
 namespace Scool.Migrations
 {
     [DbContext(typeof(ScoolMigrationsDbContext))]
-    partial class ScoolMigrationsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220601033344_Add_Course_Id_To_Reports")]
+    partial class Add_Course_Id_To_Reports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -509,9 +511,6 @@ namespace Scool.Migrations
 
                     b.Property<Guid?>("CreatorId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ReportedClassDisplayName")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .HasColumnType("nvarchar(max)");

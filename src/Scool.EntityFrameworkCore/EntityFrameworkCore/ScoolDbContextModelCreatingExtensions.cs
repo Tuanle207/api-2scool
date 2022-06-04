@@ -2,6 +2,7 @@
 using Scool.Common;
 using Scool.Users;
 using Scool.Views;
+using System;
 using Volo.Abp;
 using Volo.Abp.EntityFrameworkCore.Modeling;
 
@@ -40,7 +41,11 @@ namespace Scool.EntityFrameworkCore
                 b.HasNoKey();
                 b.ToView(nameof(OverallClassRanking), ScoolConsts.DbSchema);
             });
-
+            //builder.Entity<LrClassRanking>(b =>
+            //{
+            //    b.HasNoKey();
+            //    b.ToView(nameof(OverallClassRanking), ScoolConsts.DbSchema);
+            //});
             /* Configure your own tables/entities inside here */
 
             builder.Entity<Account>(b =>

@@ -20,6 +20,7 @@ namespace Scool.Common
         public Guid DcpClassReportId { get; set; }
         public Guid RegulationId { get; set; }
         public Regulation Regulation { get; set; }
+        public int PenaltyPoint { get; set; }
         public ICollection<DcpStudentReport> RelatedStudents { get; set; }
         public Guid? TenantId { get; set; }
     }

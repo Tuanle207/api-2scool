@@ -6,11 +6,14 @@ using Volo.Abp.MultiTenancy;
 
 namespace Scool.Common
 {
-    public class DcpReport : Entity<Guid>, IHaveCreationInfo, IMultiTenant
+    public class DcpReport : Entity<Guid>, IHaveCreationInfo, IHaveCourse, IMultiTenant
     {
         public string Status { get; set; }
         public DateTime CreationTime { get; set; }
+        public string ReportedClassDisplayNames { get; set; }
         public ICollection<DcpClassReport> DcpClassReports { get; set; }
+        public Guid CourseId { get; set; }
+        public Course Course { get; set; }
         public Guid? CreatorId { get; set; }
         public Account CreatorAccount { get; set; }
         public Guid? TenantId { get; set; }

@@ -52,8 +52,8 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
                 LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
                 LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
-                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                WHERE 
+                WHERE
+                    {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
                     (
                         C.Status = N'{DcpReportStatus.Approved}' AND 
@@ -63,7 +63,7 @@ namespace Scool.ApplicationServices
                         )
                     )
                 GROUP BY A.Id
-                ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
+                ) X JOIN [AppClass] F ON F.ID = X.ClassId
                 JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId
                 ORDER BY Faults DESC, PenaltyPoints DESC, ClassName ASC;
                 SET ARITHABORT OFF;
@@ -91,21 +91,18 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpClassReportItem] B ON A.Id = B.RegulationId
                 LEFT JOIN [AppDcpClassReport] C ON B.DcpClassReportId = C.Id
                 LEFT JOIN [AppDcpReport] D ON C.DcpReportId = D.Id
-                LEFT JOIN [AppClass] E ON C.ClassId = E.Id
-                WHERE 
+                WHERE
+                    {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
                     (
                         D.Status = N'{DcpReportStatus.Approved}' AND 
                         (
-                            (
-                                DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND 
-                                DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0
-                            ) OR 
-                            B.Id IS NULL
+                            DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND 
+                            DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0
                         )
                     )
                 GROUP BY A.Id
-                ) X RIGHT JOIN [AppRegulation] Y ON X.Id = Y.Id
+                ) X JOIN [AppRegulation] Y ON X.Id = Y.Id
                 JOIN [AppCriteria] Z ON Y.CriteriaId = Z.Id
                 WHERE Faults > 0
                 ORDER BY X.Faults DESC, Z.Name ASC;
@@ -130,26 +127,29 @@ namespace Scool.ApplicationServices
                 WITH LR AS
                 (
 	                SELECT 
-	                B.Id ClassId, 
-	                COALESCE(X.LrPoints, 0) LrPoints,
-	                COALESCE(X.TotalAbsence, 0) TotalAbsence
-	                FROM (
-	                SELECT 
-	                A.ClassId ClassId,
-	                SUM(A.TotalPoint) LrPoints,
-	                SUM(A.AbsenceNo) TotalAbsence
-	                FROM [AppLessonsRegister] A
-	                WHERE 
-                        {FilterCurrentTenantSql("A.TenantId ")} AND 
-                        (
-                            A.Status = N'{DcpReportStatus.Approved}' AND 
-                            (
-                                DATEDIFF(DAY, '{input.StartTime}', A.CreationTime) >= 0 AND 
-                                DATEDIFF(DAY, A.CreationTime, '{input.EndTime}') >= 0
-                            )
-                        )
-	                GROUP BY A.ClassId
-	                ) X RIGHT JOIN [AppClass] B ON B.Id = X.ClassId
+                        CL.Id ClassId, 
+                        COALESCE(X.LrPoints, 0) LrPoints,
+                        COALESCE(X.TotalAbsence, 0) TotalAbsence
+                    FROM (
+	                    SELECT 
+	                    A.Id ClassId,
+	                    SUM(B.TotalPoint) LrPoints,
+	                    SUM(B.AbsenceNo) TotalAbsence
+	                    FROM [AppClass] A
+	                    JOIN [AppLessonsRegister] B ON A.Id = B.ClassId
+	                    WHERE
+		                    {FilterActiveCourseSql("A.CourseId")} AND
+                            {FilterCurrentTenantSql("A.TenantId ")} AND 
+		                    (
+			                    B.Status = N'Approved' AND 
+			                    (
+				                    DATEDIFF(DAY, '{input.StartTime}', B.CreationTime) >= 0 AND 
+				                    DATEDIFF(DAY, B.CreationTime, '{input.EndTime}') >= 0
+			                    )
+		                    )
+	                    GROUP BY A.Id
+                    ) X RIGHT JOIN [AppClass] CL ON CL.Id = X.ClassId
+                    WHERE {FilterActiveCourseSql("CL.CourseId")} AND {FilterCurrentTenantSql("CL.TenantId ")}
                 )
                 SELECT RANK() OVER (
 	                ORDER BY R.RankingPoints DESC, 
@@ -170,36 +170,37 @@ namespace Scool.ApplicationServices
 	                CONVERT(int, ROUND((LR.LrPoints * {LRRatio} + DCP.DcpPoints * {DCPRatio}) / {TotalRatio}, 0)) RankingPoints
 	                FROM
 	                (
-	                SELECT 
-		                F.Id ClassId,
-		                COALESCE(X.Faults, 0) Faults,
-		                COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
-		                COALESCE(X.TotalPoints, {input.StartPoints}) DcpPoints
-	                FROM  (
-		                SELECT A.Id ClassId,
-		                COUNT(D.Id) Faults,
-		                COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
-		                {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
-		                FROM [AppClass] A
-		                LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
-		                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
-		                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
-		                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-		                WHERE 
-                            {FilterCurrentTenantSql("A.TenantId ")} AND 
-                            (
-                                C.Status = N'{DcpReportStatus.Approved}' AND 
-                                ( 
-                                    DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                                    DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+	                    SELECT 
+		                    F.Id ClassId,
+		                    COALESCE(X.Faults, 0) Faults,
+		                    COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+		                    COALESCE(X.TotalPoints, {input.StartPoints}) DcpPoints
+	                    FROM  (
+		                    SELECT A.Id ClassId,
+		                    COUNT(D.Id) Faults,
+		                    COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
+		                    {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
+		                    FROM [AppClass] A
+		                    JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
+		                    JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
+		                    JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
+		                    WHERE
+                                {FilterActiveCourseSql("A.CourseId")} AND
+                                {FilterCurrentTenantSql("A.TenantId ")} AND 
+                                (
+                                    C.Status = N'{DcpReportStatus.Approved}' AND 
+                                    ( 
+                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                    )
                                 )
-                            )
-		                GROUP BY A.ID
-	                ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId
+		                    GROUP BY A.ID
+	                    ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId                                                 -- Re-right join instead of left join above: 
+                        WHERE {FilterActiveCourseSql("F.CourseId")} AND {FilterCurrentTenantSql("F.TenantId ")}         -- rejoin 
 	                ) DCP 
 	                JOIN LR ON DCP.ClassId = LR.ClassId 
 	                JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
-	                JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+	                LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId                                              -- Teacher can be null
                 ) R;
                 ";
 
@@ -219,38 +220,114 @@ namespace Scool.ApplicationServices
             var query = _context.DcpClassRankings.FromSqlRaw(@$"
                 SET ARITHABORT ON;
                 SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
-                FROM (SELECT 
-                F.Id ClassId,
-                COALESCE(X.Faults, 0) Faults,
-                COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
-                COALESCE(X.TotalPoints, {input.StartPoints}) TotalPoints,
-                F.Name ClassName, 
-                J.Name FormTeacherName 
-                FROM  (
-                SELECT A.Id ClassId,
-                COUNT(D.Id) Faults,
-                COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
-                {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
-                FROM [AppClass] A
-                LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
-                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
-                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
-                LEFT JOIN [AppRegulation] E ON D.RegulationId = E.Id
-                WHERE 
-                    {FilterCurrentTenantSql("A.TenantId ")} AND 
-                    (
-                        C.Status = N'{DcpReportStatus.Approved}' AND 
-                        (
-                            (
-                                DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                                DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
-                            ) OR 
-                            D.Id IS NULL
-                        )
-                    )
-                GROUP BY A.ID
-                ) X RIGHT JOIN [AppClass] F ON F.ID = X.ClassId
-                JOIN [AppTeacher] J ON J.Id =  F.FormTeacherId) R
+                SELECT RANK() OVER (
+	                ORDER BY R.RankingPoints DESC, 
+	                R.LrPoints DESC, 
+	                R.TotalAbsence ASC, 
+	                R.Faults ASC) Ranking,
+	                R.*
+                FROM (
+	                SELECT
+	                    CL.Id ClassId,
+	                    CL.Name ClassName,
+	                    TC.Name FormTeacherName,
+	                    DCP.Faults,
+	                    DCP.PenaltyPoints,
+	                    DCP.DcpPoints
+	                FROM
+	                (
+	                    SELECT 
+		                    F.Id ClassId,
+		                    COALESCE(X.Faults, 0) Faults,
+		                    COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+		                    COALESCE(X.TotalPoints, {input.StartPoints}) DcpPoints
+	                    FROM  (
+		                    SELECT A.Id ClassId,
+		                    COUNT(D.Id) Faults,
+		                    COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
+		                    {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
+		                    FROM [AppClass] A
+		                    JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
+		                    JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
+		                    JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
+		                    WHERE
+                                {FilterActiveCourseSql("A.CourseId")} AND
+                                {FilterCurrentTenantSql("A.TenantId ")} AND 
+                                (
+                                    C.Status = N'{DcpReportStatus.Approved}' AND 
+                                    ( 
+                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                    )
+                                )
+		                    GROUP BY A.ID
+	                    ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId                                                 -- Re-right join instead of left join above: 
+                        WHERE {FilterActiveCourseSql("F.CourseId")} AND {FilterCurrentTenantSql("F.TenantId ")}         -- rejoin 
+	            ) DCP 
+	            JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
+	            LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+                SET ARITHABORT OFF;
+            ");
+
+            var items = await query.ToListAsync();
+
+            return new PagingModel<DcpClassRanking>(items, items.Count);
+        }
+
+        [Authorize(StatsPermissions.Rankings)]
+        public async Task<PagingModel<DcpClassRanking>> GetLrRanking(TimeFilterDto timeFilter)
+        {
+            var input = ParseQueryInput(timeFilter);
+
+            var query = _context.DcpClassRankings.FromSqlRaw(@$"
+                SET ARITHABORT ON;
+                SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
+                SELECT RANK() OVER (
+	                ORDER BY R.RankingPoints DESC, 
+	                R.LrPoints DESC, 
+	                R.TotalAbsence ASC, 
+	                R.Faults ASC) Ranking,
+	                R.*
+                FROM (
+	                SELECT
+	                    CL.Id ClassId,
+	                    CL.Name ClassName,
+	                    TC.Name FormTeacherName,
+	                    DCP.Faults,
+	                    DCP.PenaltyPoints,
+	                    DCP.DcpPoints
+	                FROM
+	                (
+	                    SELECT 
+		                    F.Id ClassId,
+		                    COALESCE(X.Faults, 0) Faults,
+		                    COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
+		                    COALESCE(X.TotalPoints, {input.StartPoints}) DcpPoints
+	                    FROM  (
+		                    SELECT A.Id ClassId,
+		                    COUNT(D.Id) Faults,
+		                    COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
+		                    {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
+		                    FROM [AppClass] A
+		                    JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
+		                    JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
+		                    JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
+		                    WHERE
+                                {FilterActiveCourseSql("A.CourseId")} AND
+                                {FilterCurrentTenantSql("A.TenantId ")} AND 
+                                (
+                                    C.Status = N'{DcpReportStatus.Approved}' AND 
+                                    ( 
+                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                    )
+                                )
+		                    GROUP BY A.ID
+	                    ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId                                                 -- Re-right join instead of left join above: 
+                        WHERE {FilterActiveCourseSql("F.CourseId")} AND {FilterCurrentTenantSql("F.TenantId ")}         -- rejoin 
+	            ) DCP 
+	            JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
+	            LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
                 SET ARITHABORT OFF;
             ");
 
@@ -278,20 +355,18 @@ namespace Scool.ApplicationServices
                 LEFT JOIN [AppDcpClassReportItem] C ON B.DcpClassReportItemId = C.Id
                 LEFT JOIN [AppDcpClassReport] D ON C.DcpClassReportId = D.Id
                 LEFT JOIN [AppDcpReport] E ON D.DcpReportId = E.Id
-                WHERE 
+                WHERE
+                    {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
                     (
                         E.Status = N'{DcpReportStatus.Approved}' AND 
                         (
-                            (
-                                DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND 
-                                DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0
-                            ) OR 
-                            B.Id IS NULL
+                            DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND 
+                            DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0
                         )
                     )
                 GROUP BY A.Id
-                ) X RIGHT JOIN [AppStudent] Y ON X.Id = Y.Id
+                ) X JOIN [AppStudent] Y ON X.Id = Y.Id
                 JOIN [AppClass] Z ON Y.ClassId = Z.Id
                 WHERE Faults != 0
                 ORDER BY Faults DESC, StudentName ASC
@@ -413,6 +488,15 @@ namespace Scool.ApplicationServices
             if (CurrentTenant.Id.HasValue)
             {
                 return $"{expression} = '{CurrentTenant.Id.Value}'";
+            }
+            return $"{expression} IS NULL";
+        }
+
+        private string FilterActiveCourseSql(string expression)
+        {
+            if (ActiveCourse.Id.HasValue)
+            {
+                return $"{expression} = '{ActiveCourse.Id.Value}'";
             }
             return $"{expression} IS NULL";
         }
