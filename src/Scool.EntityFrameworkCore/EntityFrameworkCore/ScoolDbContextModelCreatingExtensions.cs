@@ -21,6 +21,11 @@ namespace Scool.EntityFrameworkCore
                 b.HasNoKey();
                 b.ToView(nameof(DcpClassRanking), ScoolConsts.DbSchema);
             });
+            builder.Entity<LrClassRanking>(b =>
+            {
+                b.HasNoKey();
+                b.ToView(nameof(LrClassRanking), ScoolConsts.DbSchema);
+            });
             builder.Entity<DcpClassFault>(b =>
             {
                 b.HasNoKey();

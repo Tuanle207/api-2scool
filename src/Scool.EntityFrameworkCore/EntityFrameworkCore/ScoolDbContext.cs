@@ -56,6 +56,7 @@ namespace Scool.EntityFrameworkCore
         // not actually stored in DB
         public DbSet<OverallClassRanking> OverallClassRanking { get; set; }
         public DbSet<DcpClassRanking> DcpClassRankings { get; set; }
+        public DbSet<LrClassRanking> LrClassRankings { get; set; }
         public DbSet<DcpClassFault> DcpClassFaults { get; set; }
         public DbSet<CommonDcpFault> CommonDcpFaults { get; set; }
         public DbSet<StudentWithMostFaults> StudentWithMostFaults { get; set; }

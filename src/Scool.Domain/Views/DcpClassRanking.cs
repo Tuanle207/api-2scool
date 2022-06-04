@@ -10,6 +10,6 @@ namespace Scool.Views
         public string FormTeacherName { get; set; }
         public int Faults { get; set; }
         public int PenaltyPoints { get; set; }
-        public int TotalPoints { get; set; }
+        public int DcpPoints { get; set; }
     }
 }

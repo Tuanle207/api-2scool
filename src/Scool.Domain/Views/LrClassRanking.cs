@@ -8,7 +8,7 @@ namespace Scool.Views
         public Guid ClassId { get; set; }
         public string ClassName { get; set; }
         public string FormTeacherName { get; set; }
-        public int AbsenceNo { get; set; }
-        public int TotalPoints { get; set; }
+        public int TotalAbsence { get; set; }
+        public int LrPoints { get; set; }
     }
 }

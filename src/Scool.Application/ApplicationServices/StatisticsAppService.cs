@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Volo.Abp.Content;
 using Volo.Abp.Domain.Repositories;
 
 namespace Scool.ApplicationServices
@@ -49,9 +50,9 @@ namespace Scool.ApplicationServices
                 COUNT(D.Id) Faults,
                 COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints
                 FROM [AppClass] A
-                LEFT JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
-                LEFT JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
-                LEFT JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
+                JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
+                JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
+                JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
                 WHERE
                     {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
@@ -88,9 +89,9 @@ namespace Scool.ApplicationServices
                 X.Faults             
                 FROM (
                 SELECT A.Id, COUNT(B.Id) Faults FROM [AppRegulation] A
-                LEFT JOIN [AppDcpClassReportItem] B ON A.Id = B.RegulationId
-                LEFT JOIN [AppDcpClassReport] C ON B.DcpClassReportId = C.Id
-                LEFT JOIN [AppDcpReport] D ON C.DcpReportId = D.Id
+                JOIN [AppDcpClassReportItem] B ON A.Id = B.RegulationId
+                JOIN [AppDcpClassReport] C ON B.DcpClassReportId = C.Id
+                JOIN [AppDcpReport] D ON C.DcpReportId = D.Id
                 WHERE
                     {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
@@ -219,13 +220,7 @@ namespace Scool.ApplicationServices
 
             var query = _context.DcpClassRankings.FromSqlRaw(@$"
                 SET ARITHABORT ON;
-                SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
-                SELECT RANK() OVER (
-	                ORDER BY R.RankingPoints DESC, 
-	                R.LrPoints DESC, 
-	                R.TotalAbsence ASC, 
-	                R.Faults ASC) Ranking,
-	                R.*
+                SELECT RANK() OVER (ORDER BY R.DcpPoints DESC, R.Faults ASC) Ranking, R.* 
                 FROM (
 	                SELECT
 	                    CL.Id ClassId,
@@ -263,9 +258,10 @@ namespace Scool.ApplicationServices
 		                    GROUP BY A.ID
 	                    ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId                                                 -- Re-right join instead of left join above: 
                         WHERE {FilterActiveCourseSql("F.CourseId")} AND {FilterCurrentTenantSql("F.TenantId ")}         -- rejoin 
-	            ) DCP 
-	            JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
-	            LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+	                ) DCP 
+	                JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
+	                LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+                ) R
                 SET ARITHABORT OFF;
             ");
 
@@ -275,65 +271,56 @@ namespace Scool.ApplicationServices
         }
 
         [Authorize(StatsPermissions.Rankings)]
-        public async Task<PagingModel<DcpClassRanking>> GetLrRanking(TimeFilterDto timeFilter)
+        public async Task<PagingModel<LrClassRanking>> GetLrRanking(TimeFilterDto timeFilter)
         {
             var input = ParseQueryInput(timeFilter);
 
-            var query = _context.DcpClassRankings.FromSqlRaw(@$"
-                SET ARITHABORT ON;
-                SELECT R.*, RANK() OVER (ORDER BY R.TotalPoints DESC, R.Faults ASC) Ranking 
-                SELECT RANK() OVER (
-	                ORDER BY R.RankingPoints DESC, 
-	                R.LrPoints DESC, 
-	                R.TotalAbsence ASC, 
-	                R.Faults ASC) Ranking,
-	                R.*
+            var query = _context.LrClassRankings.FromSqlRaw(@$"
+               SET ARITHABORT ON;
+                SELECT RANK() OVER (ORDER BY R.LrPoints DESC, R.TotalAbsence ASC) Ranking, R.* 
                 FROM (
 	                SELECT
 	                    CL.Id ClassId,
 	                    CL.Name ClassName,
 	                    TC.Name FormTeacherName,
-	                    DCP.Faults,
-	                    DCP.PenaltyPoints,
-	                    DCP.DcpPoints
+	                    LR.TotalAbsence,
+	                    LR.LrPoints
 	                FROM
 	                (
 	                    SELECT 
-		                    F.Id ClassId,
-		                    COALESCE(X.Faults, 0) Faults,
-		                    COALESCE(X.PenaltyPoints, 0) PenaltyPoints,
-		                    COALESCE(X.TotalPoints, {input.StartPoints}) DcpPoints
-	                    FROM  (
-		                    SELECT A.Id ClassId,
-		                    COUNT(D.Id) Faults,
-		                    COALESCE(SUM(B.PenaltyTotal), 0) PenaltyPoints,
-		                    {input.StartPoints} - COALESCE(SUM(B.PenaltyTotal), 0) AS TotalPoints
-		                    FROM [AppClass] A
-		                    JOIN [AppDcpClassReport] B ON A.Id = B.ClassId
-		                    JOIN [AppDcpReport] C ON B.DcpReportId = C.Id
-		                    JOIN [AppDcpClassReportItem] D ON B.Id = D.DcpClassReportId
-		                    WHERE
-                                {FilterActiveCourseSql("A.CourseId")} AND
+                        CL.Id ClassId, 
+                        COALESCE(X.LrPoints, 0) LrPoints,
+                        COALESCE(X.TotalAbsence, 0) TotalAbsence
+                        FROM (
+	                        SELECT 
+	                        A.Id ClassId,
+	                        SUM(B.TotalPoint) LrPoints,
+	                        SUM(B.AbsenceNo) TotalAbsence
+	                        FROM [AppClass] A
+	                        JOIN [AppLessonsRegister] B ON A.Id = B.ClassId
+	                        WHERE
+		                        {FilterActiveCourseSql("A.CourseId")} AND
                                 {FilterCurrentTenantSql("A.TenantId ")} AND 
-                                (
-                                    C.Status = N'{DcpReportStatus.Approved}' AND 
-                                    ( 
-                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
-                                    )
-                                )
-		                    GROUP BY A.ID
-	                    ) X RIGHT JOIN [AppClass] F ON F.Id = X.ClassId                                                 -- Re-right join instead of left join above: 
-                        WHERE {FilterActiveCourseSql("F.CourseId")} AND {FilterCurrentTenantSql("F.TenantId ")}         -- rejoin 
-	            ) DCP 
-	            JOIN [AppClass] CL ON CL.Id = DCP.ClassId 
-	            LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+		                        (
+			                        B.Status = N'Approved' AND 
+			                        (
+				                        DATEDIFF(DAY, '{input.StartTime}', B.CreationTime) >= 0 AND 
+				                        DATEDIFF(DAY, B.CreationTime, '{input.EndTime}') >= 0
+			                        )
+		                        )
+	                        GROUP BY A.Id
+                        ) X RIGHT JOIN [AppClass] CL ON CL.Id = X.ClassId
+                        WHERE {FilterActiveCourseSql("CL.CourseId")} AND {FilterCurrentTenantSql("CL.TenantId ")}
+	                ) LR 
+	                JOIN [AppClass] CL ON CL.Id = LR.ClassId 
+	                LEFT JOIN [AppTeacher] TC ON TC.Id =  CL.FormTeacherId
+                ) R
                 SET ARITHABORT OFF;
             ");
 
             var items = await query.ToListAsync();
 
-            return new PagingModel<DcpClassRanking>(items, items.Count);
+            return new PagingModel<LrClassRanking>(items, items.Count);
         }
 
         [Authorize(StatsPermissions.Statistics)]
@@ -351,10 +338,10 @@ namespace Scool.ApplicationServices
                 (
                 SELECT A.ID, COUNT(C.Id) Faults 
                 FROM [AppStudent] A
-                LEFT JOIN [AppDcpStudentReport] B ON A.Id = B.StudentId
-                LEFT JOIN [AppDcpClassReportItem] C ON B.DcpClassReportItemId = C.Id
-                LEFT JOIN [AppDcpClassReport] D ON C.DcpClassReportId = D.Id
-                LEFT JOIN [AppDcpReport] E ON D.DcpReportId = E.Id
+                JOIN [AppDcpStudentReport] B ON A.Id = B.StudentId
+                JOIN [AppDcpClassReportItem] C ON B.DcpClassReportItemId = C.Id
+                JOIN [AppDcpClassReport] D ON C.DcpClassReportId = D.Id
+                JOIN [AppDcpReport] E ON D.DcpReportId = E.Id
                 WHERE
                     {FilterActiveCourseSql("A.CourseId")} AND
                     {FilterCurrentTenantSql("A.TenantId ")} AND 
@@ -378,49 +365,88 @@ namespace Scool.ApplicationServices
             return new PagingModel<StudentWithMostFaults>(items, items.Count);
         }
 
-        public async Task<MemoryStream> GetClassesFaultsExcel(TimeFilterDto timeFilter)
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetClassesFaultsExcel(TimeFilterDto timeFilter)
         {
             var stats = await GetClassesFaults(timeFilter);
             var template = GenerateTemplate(new List<DcpClassFault>(stats.Items), timeFilter);
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
-            return outputStream;
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
         }
 
-        public async Task<MemoryStream> GetCommonFaultsExcel(TimeFilterDto timeFilter)
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetCommonFaultsExcel(TimeFilterDto timeFilter)
         {
             var stats = await GetCommonFaults(timeFilter);
             var template = GenerateTemplate(new List<CommonDcpFault>(stats.Items), timeFilter);
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
-            return outputStream;
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
         }
 
-        public async Task<MemoryStream> GetOverallRankingExcel(TimeFilterDto timeFilter)
+        [Authorize(StatsPermissions.Rankings)]
+        public async Task<IRemoteStreamContent> GetOverallRankingExcel(TimeFilterDto timeFilter)
         {
             var stats = await GetOverallRanking(timeFilter);
             var template = GenerateTemplate(new List<OverallClassRanking>(stats.Items), timeFilter);
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
-            return outputStream;
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
         }
 
-        public async Task<MemoryStream> GetDcpRankingExcel(TimeFilterDto timeFilter)
+        [Authorize(StatsPermissions.Rankings)]
+        public async Task<IRemoteStreamContent> GetDcpRankingExcel(TimeFilterDto timeFilter)
         {
             var stats = await GetDcpRanking(timeFilter);
             var template = GenerateTemplate(new List<DcpClassRanking>(stats.Items), timeFilter);
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
-            return outputStream;
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
         }
 
-        public async Task<MemoryStream> GetStudentsWithMostFaultsExcel(TimeFilterDto timeFilter)
+        [Authorize(StatsPermissions.Rankings)]
+        public async Task<IRemoteStreamContent> GetLrRankingExcel(TimeFilterDto timeFilter)
+        {
+            var stats = await GetLrRanking(timeFilter);
+            var template = GenerateTemplate(new List<LrClassRanking>(stats.Items), timeFilter);
+            var outputStream = new MemoryStream();
+            template.SaveAs(outputStream);
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetStudentsWithMostFaultsExcel(TimeFilterDto timeFilter)
         {
             var stats = await GetStudentsWithMostFaults(timeFilter);
             var template = GenerateTemplate(new List<StudentWithMostFaults>(stats.Items), timeFilter);
             var outputStream = new MemoryStream();
             template.SaveAs(outputStream);
-            return outputStream;
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            };
         }
 
         public async Task<LineChartStatDto> GetStatForLineChart(TimeFilterDto timeFilter)
@@ -681,7 +707,55 @@ namespace Scool.ApplicationServices
                 ws.Cell(index, 3).SetValue(stat.FormTeacherName);
                 ws.Cell(index, 4).SetValue(stat.Faults);
                 ws.Cell(index, 5).SetValue(stat.PenaltyPoints);
-                ws.Cell(index, 6).SetValue(stat.TotalPoints);
+                ws.Cell(index, 6).SetValue(stat.DcpPoints);
+
+                index += 1;
+            }
+
+            return wb;
+        }
+
+        private static XLWorkbook GenerateTemplate(List<LrClassRanking> stats, TimeFilterDto timeFilter)
+        {
+
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Báo cáo xếp hạng sổ đầu bài");
+            ws.Cell(1, 1).SetValue("Từ ngày");
+            ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Cell(1, 3).SetValue("Đến ngày");
+            ws.Cell(1, 4).SetValue(timeFilter.EndTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Column(1).Width = 20;
+            ws.Column(2).Width = 20;
+            ws.Column(3).Width = 20;
+            ws.Column(4).Width = 20;
+            ws.Column(5).Width = 20;
+
+            ws.Cell(3, 1).SetValue("Thứ hạng");
+            ws.Cell(3, 2).SetValue("Tên lớp");
+            ws.Cell(3, 3).SetValue("Giáo viên chủ nhiệm");
+            ws.Cell(3, 4).SetValue("Số lượt vắng");
+            ws.Cell(3, 5).SetValue("Điểm sổ đầu bài");
+
+            ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 4).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 5).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 1).Style.Font.Bold = true;
+            ws.Cell(3, 2).Style.Font.Bold = true;
+            ws.Cell(3, 3).Style.Font.Bold = true;
+            ws.Cell(3, 4).Style.Font.Bold = true;
+            ws.Cell(3, 5).Style.Font.Bold = true;
+
+            var index = 4;
+
+            foreach (var stat in stats)
+            {
+                ws.Cell(index, 1).SetValue(stat.Ranking);
+                ws.Cell(index, 2).SetValue(stat.ClassName);
+                ws.Cell(index, 3).SetValue(stat.FormTeacherName);
+                ws.Cell(index, 4).SetValue(stat.TotalAbsence);
+                ws.Cell(index, 5).SetValue(stat.LrPoints);
 
                 index += 1;
             }
