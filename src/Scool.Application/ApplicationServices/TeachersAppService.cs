@@ -95,7 +95,8 @@ namespace Scool.ApplicationServices
                 .AnyAsync();
         }
 
-        public async Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers()
+        [HttpPost("api/app/teachers/formable-teachers")]
+        public async Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers([FromQuery(Name = "classId")] Guid? classId)
         {
             if (!ActiveCourse.IsAvailable)
             {
@@ -104,7 +105,7 @@ namespace Scool.ApplicationServices
 
             var items = await _teachersRepo
                 .Include(x => x.FormClass)
-                .Where(x => x.CourseId == ActiveCourse.Id.Value && x.FormClass == null)
+                .Where(x => x.CourseId == ActiveCourse.Id.Value && (x.FormClass == null || x.FormClass.Id == classId))
                 .Select(x => ObjectMapper.Map<Teacher, TeacherForSimpleListDto>(x))
                 .ToListAsync();
 

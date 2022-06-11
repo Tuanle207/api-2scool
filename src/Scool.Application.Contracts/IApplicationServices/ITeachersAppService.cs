@@ -18,6 +18,6 @@ namespace Scool.IApplicationServices
 
         Task<bool> IsAlreadyFormTeacher(Guid id, Guid? classId);
 
-        Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers();
+        Task<PagingModel<TeacherForSimpleListDto>> GetFormableTeachers(Guid? classId);
     }
 }
