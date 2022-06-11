@@ -1,6 +1,8 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Scool.AppConsts;
 using Scool.Common;
 using Scool.Dtos;
 using Scool.IApplicationServices;
@@ -22,6 +24,7 @@ namespace Scool.ApplicationServices
         private readonly IRepository<Regulation, Guid> _regulationRepository;
         private readonly IRepository<Criteria, Guid> _criteriasRepository;
         private readonly IRepository<Course, Guid> _coursesRepository;
+        private readonly IRepository<Grade, Guid> _gradesRepository;
         private readonly IClassesAppService _classesAppService;
         private readonly IGradesAppService _gradesAppService;
         private readonly ITeachersAppService _teacherAppService;
@@ -36,7 +39,8 @@ namespace Scool.ApplicationServices
             IRepository<Course, Guid> coursesRepository,
             IClassesAppService classesAppService,
             IGradesAppService gradesAppService,
-            ITeachersAppService teacherAppService)
+            ITeachersAppService teacherAppService,
+            IRepository<Grade, Guid> gradesRepository)
         {
             _logger = logger;
             _studentRepository = studentRepository;
@@ -48,6 +52,7 @@ namespace Scool.ApplicationServices
             _gradesAppService = gradesAppService;
             _teacherAppService = teacherAppService;
             _criteriasRepository = criteriasRepository;
+            _gradesRepository = gradesRepository;
         }
 
         public async Task PostImportStudentsData(IFormFile file)
@@ -120,6 +125,107 @@ namespace Scool.ApplicationServices
             {
                 _logger.LogError("Error when reading student data excel file: ", exception.Message, exception);
             }
+        }
+
+        public async Task PostImportStudentsDataV1(IFormFile file)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var wb = new XLWorkbook(stream);
+
+                if (!wb.Worksheets.Any())
+                {
+                    return;
+                }
+                IXLWorksheet ws = wb.Worksheets.FirstOrDefault();
+
+                if (ws.ColumnsUsed().Count() != 5)
+                {
+                    return;
+                }
+
+                int rowCount = ws.RowsUsed().Count();
+                var students = new List<StudentDataImportV1Dto>();
+
+                for (var i = 2; i <= rowCount; i++)
+                {
+                    var index = ws.Cell(i, 1).GetValue<int>();
+                    var fullName = ws.Cell(i, 2).GetString();
+                    var className = ws.Cell(i, 3).GetString();
+                    var dob = ws.Cell(i, 4).GetDateTime();
+                    var parentPhoneNumber = ws.Cell(i, 5).GetString();
+
+                    var student = new StudentDataImportV1Dto
+                    {
+                        Index = index,
+                        FullName = fullName,
+                        ClassName = className,
+                        Dob = dob,
+                        ParentPhoneNumber = parentPhoneNumber,
+                    };
+
+                    students.Add(student);
+                }
+
+                var classNames = students.Select(x => x.ClassName).Distinct().ToList();
+                var grades = await _gradesRepository.AsNoTracking().ToListAsync();
+
+                var grade10 = grades.FirstOrDefault(x => x.GradeCode == GradeCode.Ten);
+                var grade11 = grades.FirstOrDefault(x => x.GradeCode == GradeCode.Eleven);
+                var grade12 = grades.FirstOrDefault(x => x.GradeCode == GradeCode.Twelve);
+
+                var existingClasses = (await _classesAppService.GetSimpleListAsync()).Items;
+
+                var newClasses = classNames
+                    .Where(x => !existingClasses.Any(c => c.Name == GetClassName(x)))
+                    .Select(x => new Class
+                    {
+                        Name = GetClassName(x),
+                        GradeId = grades.FirstOrDefault(c => c.DisplayName == $"Khối {GradeCode.GetGradeCodeOfClass(x)}").Id,
+                        TenantId = CurrentTenant.Id
+                    })
+                    .ToList();
+
+                await _classRepository.InsertManyAsync(newClasses, true);
+
+                if (students.Any())
+                {
+                    var formatStudents = new List<Student>();
+
+                    foreach (var student in students)
+                    {
+                        var formatStudent = new Student
+                        {
+                            Name = student.FullName,
+                            Dob = student.Dob,
+                            ParentPhoneNumber = student.ParentPhoneNumber,
+                            TenantId = CurrentTenant.Id
+                        };
+                        var matchClass = existingClasses.FirstOrDefault(c => c.Name == GetClassName(student.ClassName));
+                        if (matchClass == null)
+                        {
+                            matchClass = ObjectMapper.Map<Class, ClassForSimpleListDto>(newClasses.FirstOrDefault(c => c.Name == GetClassName(student.ClassName)));
+                        }
+                        if (matchClass != null)
+                        {
+                            formatStudent.ClassId = matchClass.Id;
+                            formatStudents.Add(formatStudent);
+                        }
+                    }
+                    await _studentRepository.InsertManyAsync(formatStudents);
+                    await CurrentUnitOfWork.SaveChangesAsync();
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError("Error when reading student data excel file: ", exception.Message, exception);
+            }
+        }
+
+        private string GetClassName(string name)
+        {
+            return name.StartsWith("Lớp") ? name : $"Lớp {name}";
         }
 
         public async Task PostImportTeachersData(IFormFile file)
@@ -233,19 +339,12 @@ namespace Scool.ApplicationServices
                     var formatClasses = new List<Class>();
                     var grades = (await _gradesAppService.GetSimpleListAsync()).Items;
                     var teachers = (await _teacherAppService.GetSimpleListAsync()).Items;
-                    var course = _coursesRepository.OrderByDescending(x => x.StartTime)
-                        .FirstOrDefault();
 
-                    if (course is null)
-                    {
-                        return;
-                    }
                     foreach (var cls in classes)
                     {
                         var formatClass = new Class
                         {
                             Name = cls.Name,
-                            CourseId = course.Id,
                             TenantId = CurrentTenant.Id
                         };
                         var grade = grades.FirstOrDefault(x => x.DisplayName == cls.GradeName);
