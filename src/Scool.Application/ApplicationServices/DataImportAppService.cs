@@ -427,11 +427,10 @@ namespace Scool.ApplicationServices
                         var criteria = critierias.FirstOrDefault(x => x.DisplayName == regulation.CriteriaName);
                         if (criteria == null)
                         {
-                            criteria = newCriterias.FirstOrDefault(x => x.Name == regulation.CriteriaName);
+                            criteria = newCriterias.FirstOrDefault(x => x.DisplayName == regulation.CriteriaName);
                         }
                         if (criteria == null)
                         {
-
                             criteria = new Criteria
                             {
                                 DisplayName = regulation.CriteriaName,
