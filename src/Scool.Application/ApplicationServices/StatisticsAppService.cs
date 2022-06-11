@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
 using Scool.Common;
 using Scool.Dtos;
+using Scool.Email;
 using Scool.EntityFrameworkCore;
 using Scool.IApplicationServices;
 using Scool.Infrastructure.Common;
@@ -24,14 +25,17 @@ namespace Scool.ApplicationServices
 {
     public class StatisticsAppService : ScoolAppService, IStatisticsAppService
     {
+        private static readonly string EXCEL_MINETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private readonly IRepository<DcpReport, Guid> _dcpReportsRepo;
         private readonly IRepository<DcpClassReport, Guid> _dcpClassReportsRepo;
         private readonly IRepository<DcpClassReportItem, Guid> _dcpReportItemsRepo;
         private readonly IRepository<DcpStudentReport, Guid> _dcpStudentsRepo;
         private readonly IRepository<Student, Guid> _studentsRepo;
         private readonly IRepository<Class, Guid> _classesRepo;
+        private readonly IRepository<Teacher, Guid> _teachersRepo;
         private readonly IRepository<Regulation, Guid> _regulationsRepo;
         private readonly ScoolDbContext _context;
+        private readonly IEmailSender _emailSender;
 
         public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo,
             IRepository<DcpClassReport, Guid> dcpClassReportsRepo,
@@ -40,7 +44,9 @@ namespace Scool.ApplicationServices
             ScoolDbContext context,
             IRepository<Student, Guid> studentsRepo,
             IRepository<Class, Guid> classesRepo,
-            IRepository<Regulation, Guid> regulationsRepo)
+            IRepository<Regulation, Guid> regulationsRepo,
+            IRepository<Teacher, Guid> teachersRepo,
+            IEmailSender emailSender)
         {
             _dcpReportsRepo = dcpReportsRepo;
             _dcpClassReportsRepo = dcpClassReportsRepo;
@@ -50,6 +56,8 @@ namespace Scool.ApplicationServices
             _studentsRepo = studentsRepo;
             _classesRepo = classesRepo;
             _regulationsRepo = regulationsRepo;
+            _teachersRepo = teachersRepo;
+            _emailSender = emailSender;
         }
 
         [Authorize(StatsPermissions.Statistics)]
@@ -395,7 +403,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -409,7 +417,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -423,7 +431,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -437,7 +445,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -451,7 +459,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -465,7 +473,7 @@ namespace Scool.ApplicationServices
 
             return new RemoteStreamContent(outputStream)
             {
-                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ContentType = EXCEL_MINETYPE
             };
         }
 
@@ -532,9 +540,16 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<ClassFaultDetail>> GetClassFaultDetails([FromRoute(Name = "classId")] Guid classId, TimeFilterDto filter)
         {
+            var (startTime, endTime) = ParseDateTime(filter);
+
+            var query = _dcpClassReportsRepo.AsNoTracking()
+                .Include(x => x.DcpReport)
+                .Where(x => x.ClassId == classId && x.DcpReport.Status == DcpReportStatus.Approved && x.DcpReport.CreationTime.Date >= startTime.Date && x.DcpReport.CreationTime.Date <= endTime.Date)
+                .ToQueryString();
+
             var classReportIdTimes = await _dcpClassReportsRepo.AsNoTracking()
                 .Include(x => x.DcpReport)
-                .Where(x => x.ClassId == classId && x.DcpReport.Status == DcpReportStatus.Approved && x.DcpReport.CreationTime >= filter.StartTime && x.DcpReport.CreationTime <= filter.EndTime)
+                .Where(x => x.ClassId == classId && x.DcpReport.Status == DcpReportStatus.Approved && x.DcpReport.CreationTime.Date >= startTime.Date && x.DcpReport.CreationTime.Date <= endTime.Date)
                 .Select(x => new { x.Id, x.DcpReport.CreationTime })
                 .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
 
@@ -590,10 +605,12 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<FaultDetail>> GetRegulationFaultDetails([FromRoute(Name = "regulationId")] Guid regulationId, TimeFilterDto filter)
         {
+            var (startTime, endTime) = ParseDateTime(filter, false);
+
             var reportItemIdTimes = await _dcpReportItemsRepo.AsNoTracking()
                 .Include(x => x.DcpClassReport)
                     .ThenInclude(x => x.DcpReport)
-                .Where(x => x.RegulationId == regulationId && x.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReport.DcpReport.CreationTime >= filter.StartTime && x.DcpClassReport.DcpReport.CreationTime <= filter.EndTime)
+                .Where(x => x.RegulationId == regulationId && x.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReport.DcpReport.CreationTime.Date >= startTime && x.DcpClassReport.DcpReport.CreationTime.Date <= endTime)
                 .Select(x => new { x.Id, x.DcpClassReport.DcpReport.CreationTime })
                 .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
 
@@ -648,11 +665,13 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<StudentFaultDetail>> GetStudentFaultDetails([FromRoute(Name = "studentId")] Guid studentId, TimeFilterDto filter)
         {
+            var (startTime, endTime) = ParseDateTime(filter, false);
+
             var reportItemIdTimes = await _dcpStudentsRepo.AsNoTracking()
                 .Include(x => x.DcpClassReportItem)
                     .ThenInclude(x => x.DcpClassReport)
                         .ThenInclude(x => x.DcpReport)
-                .Where(x => x.StudentId == studentId && x.DcpClassReportItem.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime >= filter.StartTime && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime <= filter.EndTime)
+                .Where(x => x.StudentId == studentId && x.DcpClassReportItem.DcpClassReport.DcpReport.Status == DcpReportStatus.Approved && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime.Date >= startTime && x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime.Date <= endTime)
                 .Select(x => new { x.DcpClassReportItem.Id, x.DcpClassReportItem.DcpClassReport.DcpReport.CreationTime })
                 .ToDictionaryAsync(x => x.Id, x => x.CreationTime);
 
@@ -694,6 +713,146 @@ namespace Scool.ApplicationServices
                 );
         }
 
+        //[Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetClassFaultDetailsExcel([FromRoute(Name = "classId")] Guid classId, TimeFilterDto timeFilter)
+        {
+            var stats = await GetClassFaultDetails(classId, timeFilter);
+            var template = GenerateTemplate(new List<ClassFaultDetail>(stats.Items), timeFilter);
+            var outputStream = new MemoryStream();
+            template.SaveAs(outputStream);
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = EXCEL_MINETYPE
+            };
+        }
+
+        //[Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetRegulationFaultDetailsExcel([FromRoute(Name = "regulationId")] Guid regulationId, TimeFilterDto timeFilter)
+        {
+            var stats = await GetRegulationFaultDetails(regulationId, timeFilter);
+            var template = GenerateTemplate(new List<FaultDetail>(stats.Items), timeFilter);
+            var outputStream = new MemoryStream();
+            template.SaveAs(outputStream);
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = EXCEL_MINETYPE
+            };
+        }
+
+        //[Authorize(StatsPermissions.Statistics)]
+        public async Task<IRemoteStreamContent> GetStudentFaultDetailsExcel([FromRoute(Name = "studentId")]Guid studentId, TimeFilterDto timeFilter)
+        {
+            var stats = await GetStudentFaultDetails(studentId, timeFilter);
+            var template = GenerateTemplate(new List<StudentFaultDetail>(stats.Items), timeFilter);
+            var outputStream = new MemoryStream();
+            template.SaveAs(outputStream);
+
+            return new RemoteStreamContent(outputStream)
+            {
+                ContentType = EXCEL_MINETYPE
+            };
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        [HttpPost("api/app/statistics/send-class-faults-through-email")]
+        public async Task SendClassFaultsThroughEmail([FromQuery(Name = "classId")]Guid? classId, [FromQuery(Name = "startTime")] DateTime inputStartTime, [FromQuery(Name = "endTime")] DateTime inputEndTime)
+        {
+            var input = new TimeFilterDto
+            {
+                StartTime = inputStartTime,
+                EndTime = inputEndTime
+            };
+            var (startTime, endTime) = ParseDateTime(input);
+            var timeRange = $"{startTime.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}-{endTime.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}";
+
+            if (classId.HasValue)
+            {
+                var classInfo = await _classesRepo.AsNoTracking()
+                    .Include(x => x.FormTeacher)
+                    .FirstOrDefaultAsync(x => x.Id == classId.Value);
+
+                if (classInfo == null || string.IsNullOrEmpty(classInfo.FormTeacher?.Email))
+                {
+                    return;
+                }
+
+                var emailArgs = new ReportEmailSendingArgs
+                {
+                    To = new List<string> { classInfo.FormTeacher.Email },
+                    Subject = $"2Scool - Báo cáo thống kê lỗi vi phạm {classInfo.Name} từ ngày {timeRange}",
+                    Body = $"Báo cáo thống kê lỗi vi phạm {classInfo.Name} từ ngày {timeRange}",
+                    ReportType = EmailReportType.Class,
+                    ReportName = $"bao-cao-loi-vi-pham-lop-{classInfo.Name}-{timeRange}.xlsx",
+                    EntityId = classInfo.Id,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                };
+
+                await _emailSender.QueueAsync(emailArgs);
+
+                return;
+            }
+
+            var classInfos = await _classesRepo.AsNoTracking()
+                .Include(x => x.FormTeacher)
+                .Where(x => x.CourseId == ActiveCourse.Id.Value && x.FormTeacherId.HasValue && !string.IsNullOrEmpty(x.FormTeacher.Email))
+                .ToListAsync();
+
+            var emailArgsList = classInfos.Select(classInfo => new ReportEmailSendingArgs
+            {
+                To = new List<string> { classInfo.FormTeacher.Email },
+                Subject = $"2Scool - Báo cáo thống kê lỗi vi phạm {classInfo.Name} từ ngày {timeRange}",
+                Body = $"Báo cáo thống kê lỗi vi phạm {classInfo.Name} từ ngày {timeRange}",
+                ReportType = EmailReportType.Class,
+                ReportName = $"bao-cao-loi-vi-pham-lop-{classInfo.Name}-{timeRange}.xlsx",
+                EntityId = classInfo.Id,
+                StartTime = startTime,
+                EndTime = endTime,
+            });
+
+            var sendEmailTasks = emailArgsList.Select(x => _emailSender.QueueAsync(x));
+            await Task.WhenAll(sendEmailTasks);
+        }
+
+        [Authorize(StatsPermissions.Statistics)]
+        [HttpPost("api/app/statistics/send-student-faults-through-email")]
+        public async Task SendStudentFaultsThroughEmail([FromQuery(Name = "studentId")] Guid studentId, [FromQuery(Name = "startTime")] DateTime inputStartTime, [FromQuery(Name = "endTime")] DateTime inputEndTime)
+        {
+            var input = new TimeFilterDto
+            {
+                StartTime = inputStartTime,
+                EndTime = inputEndTime
+            };
+            var (startTime, endTime) = ParseDateTime(input, false);
+            var timeRange = $"{startTime.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}-{endTime.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}";
+
+            var studentInfo = await _studentsRepo.AsNoTracking()
+                    .Include(x => x.Class)
+                        .ThenInclude(x => x.FormTeacher)
+                    .FirstOrDefaultAsync(x => x.Id == studentId);
+
+            if (studentInfo == null || string.IsNullOrEmpty(studentInfo.Class.FormTeacher?.Email))
+            {
+                return;
+            }
+
+            var emailArgs = new ReportEmailSendingArgs
+            {
+                To = new List<string> { studentInfo.Class.FormTeacher.Email },
+                Subject = $"2Scool - Báo cáo lỗi vi phạm của học sinh {studentInfo.Name} từ ngày {timeRange}",
+                Body = $"Báo cáo thống kê lỗi vi phạm {studentInfo.Name} từ ngày {timeRange}",
+                ReportType = EmailReportType.Student,
+                ReportName = $"bao-cao-loi-vi-pham-hoc-sinh-{studentInfo.Name}-{timeRange}.xlsx",
+                EntityId = studentId,
+                StartTime = startTime,
+                EndTime = endTime,
+            };
+
+            await _emailSender.QueueAsync(emailArgs);
+        }
+
         private string FilterCurrentTenantSql(string expression)
         {
             if (CurrentTenant.Id.HasValue)
@@ -730,6 +889,14 @@ namespace Scool.ApplicationServices
                 EndTime = timeFilter.EndTime.ToString("MM/dd/yyyy"),
                 Weeks = weeks
             };
+        }
+
+        private (DateTime, DateTime) ParseDateTime(TimeFilterDto timeFilter, bool byWeek = true)
+        {
+            var startDate = byWeek && timeFilter.StartTime.DayOfWeek != DayOfWeek.Monday ?
+                timeFilter.StartTime.AddDays(7).StartOfWeek() : timeFilter.StartTime;
+
+            return (startDate.Date, timeFilter.EndTime.Date);
         }
 
         private static XLWorkbook GenerateTemplate(List<DcpClassFault> stats, TimeFilterDto timeFilter)
@@ -849,7 +1016,6 @@ namespace Scool.ApplicationServices
 
         private static XLWorkbook GenerateTemplate(List<DcpClassRanking> stats, TimeFilterDto timeFilter)
         {
-
             var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Báo cáo xếp hạng thi đua nề nếp");
             ws.Cell(1, 1).SetValue("Từ ngày");
@@ -902,7 +1068,6 @@ namespace Scool.ApplicationServices
 
         private static XLWorkbook GenerateTemplate(List<LrClassRanking> stats, TimeFilterDto timeFilter)
         {
-
             var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Báo cáo xếp hạng sổ đầu bài");
             ws.Cell(1, 1).SetValue("Từ ngày");
@@ -950,7 +1115,6 @@ namespace Scool.ApplicationServices
 
         private static XLWorkbook GenerateTemplate(List<CommonDcpFault> stats, TimeFilterDto timeFilter)
         {
-
             var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Thống kê lỗi vi phạm");
             ws.Cell(1, 1).SetValue("Từ ngày");
@@ -992,7 +1156,6 @@ namespace Scool.ApplicationServices
 
         private static XLWorkbook GenerateTemplate(List<StudentWithMostFaults> stats, TimeFilterDto timeFilter)
         {
-
             var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("Thống kê học sinh vi phạm");
             ws.Cell(1, 1).SetValue("Từ ngày");
@@ -1026,6 +1189,146 @@ namespace Scool.ApplicationServices
                 ws.Cell(index, 2).SetValue(stat.StudentName);
                 ws.Cell(index, 3).SetValue(stat.ClassName);
                 ws.Cell(index, 4).SetValue(stat.Faults);
+                index += 1;
+            }
+
+            return wb;
+        }
+
+        private static XLWorkbook GenerateTemplate(List<ClassFaultDetail> stats, TimeFilterDto timeFilter)
+        {
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            ws.Cell(1, 1).SetValue("Từ ngày");
+            ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Cell(1, 3).SetValue("Đến ngày");
+            ws.Cell(1, 4).SetValue(timeFilter.EndTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Column(1).Width = 20;
+            ws.Column(2).Width = 20;
+            ws.Column(3).Width = 20;
+            ws.Column(4).Width = 20;
+            ws.Column(5).Width = 20;
+            ws.Column(6).Width = 40;
+
+            ws.Cell(3, 1).SetValue("Mã vi phạm");
+            ws.Cell(3, 2).SetValue("Thời gian");
+            ws.Cell(3, 3).SetValue("Tên quy định");
+            ws.Cell(3, 4).SetValue("Tiêu chí");
+            ws.Cell(3, 5).SetValue("Tổng điểm trừ");
+            ws.Cell(3, 6).SetValue("Học sinh vi phạm");
+            ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 4).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 5).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 6).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 1).Style.Font.Bold = true;
+            ws.Cell(3, 2).Style.Font.Bold = true;
+            ws.Cell(3, 3).Style.Font.Bold = true;
+            ws.Cell(3, 4).Style.Font.Bold = true;
+            ws.Cell(3, 5).Style.Font.Bold = true;
+            ws.Cell(3, 6).Style.Font.Bold = true;
+
+            var index = 4;
+
+            foreach (var stat in stats)
+            {
+                ws.Cell(index, 1).SetValue(stat.Id);
+                ws.Cell(index, 2).SetValue(stat.CreationTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+                ws.Cell(index, 3).SetValue(stat.RegulationName);
+                ws.Cell(index, 4).SetValue(stat.CriteriaName);
+                ws.Cell(index, 5).SetValue(stat.PenaltyPoints);
+                ws.Cell(index, 6).SetValue(stat.StudentNames);
+                index += 1;
+            }
+
+            return wb;
+        }
+
+        private static XLWorkbook GenerateTemplate(List<FaultDetail> stats, TimeFilterDto timeFilter)
+        {
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            ws.Cell(1, 1).SetValue("Từ ngày");
+            ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Cell(1, 3).SetValue("Đến ngày");
+            ws.Cell(1, 4).SetValue(timeFilter.EndTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Column(1).Width = 20;
+            ws.Column(2).Width = 20;
+            ws.Column(3).Width = 20;
+            ws.Column(4).Width = 20;
+            ws.Column(5).Width = 40;
+
+            ws.Cell(3, 1).SetValue("Mã vi phạm");
+            ws.Cell(3, 2).SetValue("Thời gian");
+            ws.Cell(3, 3).SetValue("Tổng điểm trừ");
+            ws.Cell(3, 4).SetValue("Lớp vi phạm");
+            ws.Cell(3, 5).SetValue("Học sinh vi phạm");
+            ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 4).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 5).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 1).Style.Font.Bold = true;
+            ws.Cell(3, 2).Style.Font.Bold = true;
+            ws.Cell(3, 3).Style.Font.Bold = true;
+            ws.Cell(3, 4).Style.Font.Bold = true;
+            ws.Cell(3, 5).Style.Font.Bold = true;
+
+            var index = 4;
+
+            foreach (var stat in stats)
+            {
+                ws.Cell(index, 1).SetValue(stat.Id);
+                ws.Cell(index, 2).SetValue(stat.CreationTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+                ws.Cell(index, 3).SetValue(stat.PenaltyPoints);
+                ws.Cell(index, 4).SetValue(stat.ClassName);
+                ws.Cell(index, 5).SetValue(stat.StudentNames);
+                index += 1;
+            }
+
+            return wb;
+        }
+
+        private static XLWorkbook GenerateTemplate(List<StudentFaultDetail> stats, TimeFilterDto timeFilter)
+        {
+            var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            ws.Cell(1, 1).SetValue("Từ ngày");
+            ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Cell(1, 3).SetValue("Đến ngày");
+            ws.Cell(1, 4).SetValue(timeFilter.EndTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+            ws.Column(1).Width = 20;
+            ws.Column(2).Width = 20;
+            ws.Column(3).Width = 20;
+            ws.Column(4).Width = 20;
+            ws.Column(5).Width = 20;
+
+            ws.Cell(3, 1).SetValue("Mã vi phạm");
+            ws.Cell(3, 2).SetValue("Thời gian");
+            ws.Cell(3, 3).SetValue("Quy định");
+            ws.Cell(3, 4).SetValue("Tiêu chí");
+            ws.Cell(3, 5).SetValue("Điểm trừ");
+            ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 4).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 5).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
+            ws.Cell(3, 1).Style.Font.Bold = true;
+            ws.Cell(3, 2).Style.Font.Bold = true;
+            ws.Cell(3, 3).Style.Font.Bold = true;
+            ws.Cell(3, 4).Style.Font.Bold = true;
+            ws.Cell(3, 5).Style.Font.Bold = true;
+
+            var index = 4;
+
+            foreach (var stat in stats)
+            {
+                ws.Cell(index, 1).SetValue(stat.Id);
+                ws.Cell(index, 2).SetValue(stat.CreationTime?.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
+                ws.Cell(index, 3).SetValue(stat.RegulationName);
+                ws.Cell(index, 4).SetValue(stat.CriteriaName);
+                ws.Cell(index, 5).SetValue(stat.PenaltyPoints);
                 index += 1;
             }
 

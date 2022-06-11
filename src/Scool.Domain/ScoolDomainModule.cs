@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scool.MultiTenancy;
+using Volo.Abp;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.Emailing;
@@ -31,6 +32,15 @@ namespace Scool
     )]
     public class ScoolDomainModule : AbpModule
     {
+
+        public override void OnApplicationInitialization(ApplicationInitializationContext context)
+        {
+            var settingManager = context.ServiceProvider.GetRequiredService<SettingManager>();
+            settingManager.SetGlobalAsync(EmailSettingNames.Smtp.Password, "zesgcyubdfdqvcnl");
+
+            base.OnApplicationInitialization(context);
+        }
+
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
             Configure<AbpMultiTenancyOptions>(options =>
@@ -38,9 +48,9 @@ namespace Scool
                 options.IsEnabled = MultiTenancyConsts.IsEnabled;
             });
 
-#if DEBUG
-            context.Services.Replace(ServiceDescriptor.Singleton<IEmailSender, NullEmailSender>());
-#endif
+//#if DEBUG
+            //context.Services.Replace(ServiceDescriptor.Singleton<IEmailSender, NullEmailSender>());
+//#endif
         }
     }
 }

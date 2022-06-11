@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,7 +18,6 @@ using Volo.Abp.AspNetCore.Authentication.JwtBearer;
 using Volo.Abp.AspNetCore.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
-using Volo.Abp.AspNetCore.Mvc.UI.Theme.Basic.Bundling;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
@@ -29,18 +27,16 @@ using Volo.Abp.Swashbuckle;
 using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using IdentityServer4.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
-using Scool.Users;
-using Volo.Abp.Identity;
-using Microsoft.AspNetCore.Identity;
 using Scool.Middlewares;
-using Volo.Abp.MultiTenancy;
 using Volo.Abp.AspNetCore.SignalR;
 using Scool.Notification;
+using Volo.Abp.MailKit;
+using MailKit.Security;
+using Volo.Abp.BackgroundJobs;
+using Scool.Email;
 
 namespace Scool
 {
@@ -55,7 +51,8 @@ namespace Scool
         typeof(AbpAccountWebIdentityServerModule),
         typeof(AbpAspNetCoreSerilogModule),
         typeof(AbpSwashbuckleModule),
-        typeof(AbpAspNetCoreSignalRModule)
+        typeof(AbpAspNetCoreSignalRModule),
+        typeof(AbpBackgroundJobsModule)
     )]
     public class ScoolHttpApiHostModule : AbpModule
     {
@@ -75,9 +72,43 @@ namespace Scool
             ConfigureCors(context, configuration);
             ConfigureSwaggerServices(context, configuration);
             ConfigureAutoAntiForgery();
+            ConfigureMailKit();
+            ConfigBackgroundJobWorker();
+            ConfigureEnvConfiguration(context, configuration);
+            ConfigureOtherSettings(context);
+        }
+
+        private void ConfigureOtherSettings(ServiceConfigurationContext context)
+        {
             context.Services.AddHttpContextAccessor();
             context.Services.AddTransient<NotificationHub>();
+            context.Services.AddHttpClient();
         }
+
+        private void ConfigureEnvConfiguration(ServiceConfigurationContext context, IConfiguration configuration)
+        {
+            var emailOptions = configuration.GetSection("Email");
+            context.Services.Configure<EmailOptions>(emailOptions);
+
+        }
+
+        private void ConfigBackgroundJobWorker()
+        {
+            Configure<AbpBackgroundJobWorkerOptions>(options =>
+            {
+                options.DefaultTimeout = 10 * 60; // 10 minutes
+            });
+        }
+
+        private void ConfigureMailKit()
+        {
+            Configure<AbpMailKitOptions>(options =>
+            {
+                options.SecureSocketOption = SecureSocketOptions.Auto;
+            });
+
+        }
+
 
         private void ConfigureBundles()
         {
@@ -234,6 +265,8 @@ namespace Scool
             var app = context.GetApplicationBuilder();
             var env = context.GetEnvironment();
             var config = context.GetConfiguration();
+
+            
 
             if (env.IsDevelopment())
             {

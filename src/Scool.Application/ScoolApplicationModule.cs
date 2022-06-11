@@ -7,6 +7,8 @@ using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.AspNetCore.SignalR;
+using Volo.Abp.MailKit;
+using Volo.Abp.BackgroundJobs;
 
 namespace Scool
 {
@@ -19,8 +21,10 @@ namespace Scool
         typeof(AbpTenantManagementApplicationModule),
         typeof(AbpFeatureManagementApplicationModule),
         typeof(AbpSettingManagementApplicationModule),
-        typeof(AbpAspNetCoreSignalRModule)
-        )]
+        typeof(AbpAspNetCoreSignalRModule),
+        typeof(AbpMailKitModule),
+        typeof(AbpBackgroundJobsModule)
+    )]
     public class ScoolApplicationModule : AbpModule
     {
         public override void ConfigureServices(ServiceConfigurationContext context)

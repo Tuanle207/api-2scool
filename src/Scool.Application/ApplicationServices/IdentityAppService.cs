@@ -16,11 +16,11 @@ using IdentityRole = Volo.Abp.Identity.IdentityRole;
 using IdentityUser = Volo.Abp.Identity.IdentityUser;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.Identity.Settings;
-using Volo.Abp.Emailing;
 using Scool.Dtos;
 using Scool.ObjectExtentions;
 using Scool.Common;
 using Scool.IApplicationServices;
+using Scool.Email;
 
 namespace Scool.ApplicationServices
 {
@@ -97,13 +97,17 @@ namespace Scool.ApplicationServices
             account.TenantId = CurrentTenant.Id;
             await _accountRepository.InsertAsync(account);
 
-            var emailBody = @"
-                <p>Hi Tuan,</p>
-                <p>This email is from 2Scool,</p>
+            var emailBody = @$"
+                <p>Xin chào {account.DisplayName},</p>
+                <p>Tài khoản của bạn đã được tạo thành công trên hệ thống quản lý nề nếp 2Scool bằng địa chỉ email này!</p>
                 <br>
-                <p>Thanks and Best regards</p>
+                <p>Vui lòng liên hệ với Quản Trị Viên Nề Nếp trường THPT của bạn để lấy mật khẩu đăng nhập.</p>
+                <br>
+                <br>
+                <p>Hệ thống Quản Lý Nề Nếp THPT 2Scool</p>
+                <p>Thanks and Best regards.</p>
             ";
-            await _emailSender.SendAsync(to: "18521597@gm.uit.edu.vn", subject: "Email from 2Scool", body: emailBody);
+            //await _emailSender.QueueAsync(to: account.Email, subject: "Tài khoản 2Scool của bạn đã được tạo thành công", body: emailBody, isBodyHtml: false);
 
             return result;
         }
@@ -203,6 +207,16 @@ namespace Scool.ApplicationServices
                 .Where(x => x.Name == lowercaseName)
                 .Where(x => x.Id != roleId)
                 .AnyAsync();
+        }
+
+        public override async Task DeleteAsync(Guid id)
+        {
+            await base.DeleteAsync(id);
+            var account = await _accountRepository.FirstOrDefaultAsync(x => x.UserId == id);
+            if (account != null)
+            {
+                _accountRepository.DeleteAsync(account);
+            }
         }
 
         private async Task SetAccountOptionsAsync()

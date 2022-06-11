@@ -18,9 +18,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.57.0.1869" />
+    <PackageReference Include="MimeTypes" Version="2.4.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Volo.Abp.Account.Application" Version="4.3.0" />
     <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="4.3.0" />
     <PackageReference Include="Volo.Abp.Identity.Application" Version="4.3.0" />
+    <PackageReference Include="Volo.Abp.MailKit" Version="4.3.0" />
     <PackageReference Include="Volo.Abp.PermissionManagement.Application" Version="4.3.0" />
     <PackageReference Include="Volo.Abp.TenantManagement.Application" Version="4.3.0" />
     <PackageReference Include="Volo.Abp.FeatureManagement.Application" Version="4.3.0" />
