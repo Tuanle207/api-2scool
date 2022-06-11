@@ -394,7 +394,7 @@ namespace Scool.ApplicationServices
                     var description = ws.Cell(i, 3).GetString();
                     var point = ws.Cell(i, 4).GetValue<int>();
                     var type = ws.Cell(i, 5).GetString();
-                    var criteriaName = ws.Cell(i, 5).GetString();
+                    var criteriaName = ws.Cell(i, 6).GetString();
 
                     var regulation = new RegulationDataImportDto
                     {
@@ -425,8 +425,13 @@ namespace Scool.ApplicationServices
                             TenantId = CurrentTenant.Id,
                         };
                         var criteria = critierias.FirstOrDefault(x => x.DisplayName == regulation.CriteriaName);
-                        if (criteria is null)
+                        if (criteria == null)
                         {
+                            criteria = newCriterias.FirstOrDefault(x => x.Name == regulation.CriteriaName);
+                        }
+                        if (criteria == null)
+                        {
+
                             criteria = new Criteria
                             {
                                 DisplayName = regulation.CriteriaName,
