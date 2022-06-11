@@ -63,12 +63,12 @@ jobs:
             sed -i "s%<DB_CONNECTION_STRING>%$DB_CONNECTION_STRING%g" src/Scool.HttpApi.Host/appsettings.json
             sed -i "s%\"<CLIENT>\"%$CLIENT%g" src/Scool.HttpApi.Host/appsettings.json
 
-            sed -i "s%\"<STMP_HOST>\"%$STMP_HOST%g" src/Scool.HttpApi.Host/appsettings.json
-            sed -i "s%\"<STMP_PORT>\"%$STMP_PORT%g" src/Scool.HttpApi.Host/appsettings.json
-            sed -i "s%\"<SMTP_USERNAME>\"%$SMTP_USERNAME%g" src/Scool.HttpApi.Host/appsettings.json
-            sed -i "s%\"<GOOGLE_CLIENT_ID>\"%$GOOGLE_CLIENT_ID%g" src/Scool.HttpApi.Host/appsettings.json
-            sed -i "s%\"<GOOGLE_CLIENT_SECRET>\"%$GOOGLE_CLIENT_SECRET%g" src/Scool.HttpApi.Host/appsettings.json
-            sed -i "s%\"<GOOGLE_REFRESH_TOKEN>\"%$GOOGLE_REFRESH_TOKEN%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<STMP_HOST>%$STMP_HOST%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<STMP_PORT>%$STMP_PORT%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<SMTP_USERNAME>%$SMTP_USERNAME%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<GOOGLE_CLIENT_ID>%$GOOGLE_CLIENT_ID%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<GOOGLE_CLIENT_SECRET>%$GOOGLE_CLIENT_SECRET%g" src/Scool.HttpApi.Host/appsettings.json
+            sed -i "s%<GOOGLE_REFRESH_TOKEN>%$GOOGLE_REFRESH_TOKEN%g" src/Scool.HttpApi.Host/appsettings.json
 
 
             #Copy to output folder
