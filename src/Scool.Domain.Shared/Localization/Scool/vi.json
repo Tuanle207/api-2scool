@@ -4,6 +4,7 @@
     "Menu:Home": "Trang chủ",
     "Welcome": "Chào mừng bạn",
     "LongWelcomeMessage": "Chào mừng bạn đến ứng dụng. Đây là một dự án khởi nghiệp dựa trên khung ABP. Để biết thêm thông tin, hãy truy cập abp.io.",
+
     "Permission:Courses": "Quản Lý Khóa Học",
     "Permission:Courses:Courses": "Khóa học",
     "Permission:Courses:Courses.Create": "Tạo khóa học",
@@ -11,6 +12,14 @@
     "Permission:Courses:Courses.Delete": "Xóa khóa học",
     "Permission:Courses:Courses.Get": "Xem thông tin chi tiết khóa học",
     "Permission:Courses:Courses.GetAll": "Xem danh sách khóa học",
+
+    "Permission:Rules": "Quản Lý Quy Định",
+    "Permission:Rules:Rules": "Quy định",
+    "Permission:Rules:Rules.Create": "Tạo quy định",
+    "Permission:Rules:Rules.Update": "Cập nhật quy định",
+    "Permission:Rules:Rules.Delete": "Xóa quy định",
+    "Permission:Rules:Rules.Get": "Xem thông tin quy định",
+    "Permission:Rules:Rules.GetAll": "Xem danh sách quy định",
 
     "Permission:Dcp": "Quản lý nề nếp",
     "Permission:Dcp:DcpReports": "Quản lý chấm điểm nề nếp",

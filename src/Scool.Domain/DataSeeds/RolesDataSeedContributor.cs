@@ -96,6 +96,13 @@ namespace Scool.DataSeeds
                     };
                     var dcpManagerRolePermissionNames = new List<string>
                     {
+                        RulesPermissions.Permission,
+                        RulesPermissions.Get,
+                        RulesPermissions.GetAll,
+                        RulesPermissions.Update,
+                        RulesPermissions.Delete,
+                        RulesPermissions.Create,
+
                         ReportsPermissions.DcpReportPermission,
                         ReportsPermissions.CreateNewDcpReport,
                         ReportsPermissions.GetDcpReportApprovalHistory,

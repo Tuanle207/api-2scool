@@ -17,7 +17,7 @@ namespace Scool.AppConsts
                 Twelve.ToString(),
             };
 
-            var code = grades.Find(x => name.Contains(x));
+            var code = grades.Find(x => name.StartsWith("Lớp") ? name.StartsWith($"Lớp {x}") : name.StartsWith(x));
 
             if (!string.IsNullOrEmpty(code))
             {

@@ -8,7 +8,7 @@ namespace Scool.Dtos
 {
     public class LineChartStatDto
     {
-        public Dictionary<string, List<LineChartStat>> items { get; set; }
+        public Dictionary<string, List<LineChartStat>> Items { get; set; }
     }
 
     public class LineChartStat

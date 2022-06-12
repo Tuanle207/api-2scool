@@ -4,6 +4,7 @@ using Scool.Dtos;
 using Scool.IApplicationServices;
 using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
+using Scool.Permission;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,11 @@ namespace Scool.ApplicationServices
         public CriteriasAppService(IRepository<Criteria, Guid> criteriasRepo) : base(criteriasRepo)
         {
             _criteriasRepo = criteriasRepo;
+
+            CreatePolicyName = RulesPermissions.Create;
+            GetPolicyName = RulesPermissions.Get;
+            UpdatePolicyName = RulesPermissions.Update;
+            DeletePolicyName = RulesPermissions.Delete;
         }
 
         public async Task<PagingModel<CriteriaForSimpleListDto>> GetSimpleListAsync()

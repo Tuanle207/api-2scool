@@ -481,14 +481,26 @@ namespace Scool.ApplicationServices
         {
             var result = new LineChartStatDto
             {
-                items = new Dictionary<string, List<LineChartStat>>()
+                Items = new Dictionary<string, List<LineChartStat>>()
             };
 
-            IList<DcpReport> reports = await _dcpReportsRepo.AsNoTracking()
-                .Where(x => x.Status == DcpReportStatus.Approved)
-                .Where(x => x.CreationTime >= timeFilter.StartTime && x.CreationTime <= timeFilter.EndTime)
+            var rankings = await GetDcpRanking(timeFilter);
+
+            var top5 = rankings.Items
+                .OrderByDescending(x => x.DcpPoints)
+                    .ThenBy(x => x.Faults)
+                .Take(5).ToList();
+
+            var classIds = top5.Select(x => x.ClassId).ToList();
+
+            var reports = await _dcpReportsRepo.AsNoTracking()
                 .Include(x => x.DcpClassReports)
-                .ThenInclude(x => x.Faults)
+                    .ThenInclude(x => x.Faults)
+                .Where(x => 
+                    x.Status == DcpReportStatus.Approved && 
+                    x.CreationTime >= timeFilter.StartTime && x.CreationTime <= timeFilter.EndTime && 
+                    x.DcpClassReports.Any(c => classIds.Contains(c.ClassId))
+                )
                 .ToListAsync();
 
             var dayofWeeks = new Dictionary<int, string>
@@ -507,19 +519,14 @@ namespace Scool.ApplicationServices
                 var stats = new List<LineChartStat>();
                 DateTime currentDate = timeFilter.StartTime.Date.AddDays(dayofWeek);
                 DateTime nextDate = currentDate.AddDays(1);
-                IList<DcpClassReport> classReports = reports
+                var classReports = reports
                     .Where(x => x.CreationTime >= currentDate && x.CreationTime < nextDate)
                     .SelectMany(x => x.DcpClassReports)
                     .ToList();
 
-                IList<Guid> listClassId = classReports.Select(x => x.ClassId)
-                    .Distinct()
-                    .ToList();
-
-                foreach (Guid classId in listClassId)
+                foreach (Guid classId in classIds)
                 {
-                    IEnumerable<DcpClassReport> currentClassReports = classReports.Where(x => x.ClassId == classId);
-
+                    var currentClassReports = classReports.Where(x => x.ClassId == classId);
                     int penaltyPoints = currentClassReports.Sum(x => x.PenaltyTotal);
                     int faults = currentClassReports.SelectMany(x => x.Faults).Count();
                     stats.Add(new LineChartStat
@@ -530,12 +537,66 @@ namespace Scool.ApplicationServices
                     });
                 }
 
-                result.items.Add(dayofWeeks[dayofWeek], stats);
+                result.Items.Add(dayofWeeks[dayofWeek], stats);
             }
-
 
             return result;
         }
+
+        public async Task<PieChartStatDto> GetStatForPieChart(TimeFilterDto timeFilter)
+        {
+            var stats = await GetCommonFaults(timeFilter);
+
+            var top5 = stats.Items
+                .Take(5)
+                .OrderByDescending(x => x.Faults)
+                    .ThenBy(x => x.Name)
+                .ToList();
+
+            var others = stats.Items.Skip(5).ToList();
+
+            var otherFaults = new CommonDcpFault
+            {
+                Name = "Vi phạm khác",
+                Faults = others.Sum(x => x.Faults)
+            };
+
+            if (others.Count > 0 && otherFaults.Faults > 0)
+            {
+                top5.Add(otherFaults);
+            }
+
+            return new PieChartStatDto
+            {
+                Items = top5.Select(x => new PieChartStat
+                {
+                    Name = x.Name,
+                    Value = x.Faults
+                }).ToList()
+            };
+        }
+
+        public async Task<BarChartStatDto> GetStatForBarChart(TimeFilterDto timeFilter)
+        {
+            var stats = await GetDcpRanking(timeFilter);
+
+            var top5 = stats.Items
+                .Take(5)
+                .OrderByDescending(x => x.DcpPoints)
+                    .ThenBy(x => x.Faults)
+                .ToList();
+
+            return new BarChartStatDto
+            {
+                Items = top5.Select(x => new BarChartStat
+                {
+                    Name = x.ClassName,
+                    Points = x.DcpPoints,
+                    Faults = x.Faults
+                }).ToList()
+            };
+        }
+
 
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<ClassFaultDetail>> GetClassFaultDetails([FromRoute(Name = "classId")] Guid classId, TimeFilterDto filter)

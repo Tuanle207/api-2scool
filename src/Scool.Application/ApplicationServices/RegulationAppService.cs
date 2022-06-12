@@ -5,6 +5,7 @@ using Scool.IApplicationServices;
 using Scool.Infrastructure.AppService;
 using Scool.Infrastructure.Common;
 using Scool.Infrastructure.Linq;
+using Scool.Permission;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,6 +27,11 @@ namespace Scool.ApplicationServices
         public RegulationAppService(IRepository<Regulation, Guid> regulationsRepo) : base(regulationsRepo)
         {
             _regulationsRepo = regulationsRepo;
+
+            CreatePolicyName = RulesPermissions.Create;
+            GetPolicyName = RulesPermissions.Get;
+            UpdatePolicyName = RulesPermissions.Update;
+            DeletePolicyName = RulesPermissions.Delete;
         }
 
         public async Task<PagingModel<RegulationForSimpleListDto>> GetSimpleListAsync()

@@ -300,23 +300,6 @@ namespace Scool.ApplicationServices
                 }
             }
 
-            //var item = await _dcpReportsRepo
-            //    .AsNoTracking()
-            //    .Where(x => x.Id == id)
-            //    .Include(x => x.CreatorAccount)
-            //    .Include(e => e.DcpClassReports)
-            //        .ThenInclude(e => e.Class)
-            //    .Include(e => e.DcpClassReports)
-            //        .ThenInclude(e => e.Faults)
-            //        .ThenInclude(e => e.RelatedStudents)
-            //        .ThenInclude(e => e.Student)
-            //    .Include(e => e.DcpClassReports)
-            //        .ThenInclude(e => e.Faults)
-            //        .ThenInclude(e => e.Regulation)
-            //        .ThenInclude(e => e.Criteria)
-            //    .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
-            //    .FirstOrDefaultAsync();
-
             return report;
         }
 
@@ -369,7 +352,7 @@ namespace Scool.ApplicationServices
             var items = await _dcpClassReportsRepo
                .Include(e => e.Faults)
                .ThenInclude(e => e.RelatedStudents)
-               .Where(x => x.Id == id)
+               .Where(x => x.DcpReportId == id)
                .Select(x => ObjectMapper.Map<DcpClassReport, CreateUpdateDcpClassReportDto>(x))
                .ToListAsync();
 

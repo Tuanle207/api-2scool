@@ -4,6 +4,7 @@
     "Menu:Home": "Home",
     "Welcome": "Welcome",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io.",
+
     "Permission:Courses": "Courses Management",
     "Permission:Courses:Courses": "Courses",
     "Permission:Courses:Courses.Create": "Create courses",
@@ -11,6 +12,14 @@
     "Permission:Courses:Courses.Delete": "Delete courses",
     "Permission:Courses:Courses.Get": "Get course detail",
     "Permission:Courses:Courses.GetAll": "Get courses",
+
+    "Permission:Rules": "Regulations Management",
+    "Permission:Rules:Rules": "Regulations",
+    "Permission:Rules:Rules.Create": "Create regulation",
+    "Permission:Rules:Rules.Update": "Update regulation",
+    "Permission:Rules:Rules.Delete": "Delete regulation",
+    "Permission:Rules:Rules.Get": "Get regulation detail",
+    "Permission:Rules:Rules.GetAll": "Get regulations",
 
     "Permission:Dcp": "Discipline Management",
     "Permission:Dcp:DcpReports": "Discipline Reports",
