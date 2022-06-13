@@ -102,7 +102,7 @@ namespace Scool.ApplicationServices
                     int mutiply = regulation.Type == RegulationType.Student && listStudentId.Count > 0 ? listStudentId.Count : 1;
                     var penalty = regulation.Point * mutiply;
                     penaltyTotal += penalty;
-                    dcpClassReportItem.PenaltyPoint = penaltyTotal;
+                    dcpClassReportItem.PenaltyPoint = penalty;
 
                     // students violating the regulations
                     var reportedStudents = listStudentId.Select(studentId => new DcpStudentReport
@@ -183,7 +183,7 @@ namespace Scool.ApplicationServices
                     int mutiply = regulation.Type == RegulationType.Class ? 1 : listStudentId.Count;
                     var penalty = regulation.Point * mutiply;
                     penaltyTotal += penalty;
-                    dcpClassReportItem.PenaltyPoint = penaltyTotal;
+                    dcpClassReportItem.PenaltyPoint = penalty;
 
                     // students violating the regulations
                     var reportedStudents = listStudentId.Select(studentId => new DcpStudentReport
