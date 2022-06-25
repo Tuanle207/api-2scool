@@ -146,10 +146,12 @@ namespace Scool.ApplicationServices
             await CleanDcpReport(id);
 
             // replace with new report with the same ID (like the way we are doing HTTP PUT)
-            var report = new DcpReport(id);
-            report.TenantId = CurrentTenant.Id;
-            report.CourseId = ActiveCourse.Id.Value;
-            report.CreationTime = oldReport.CreationTime;
+            var report = new DcpReport(id)
+            {
+                TenantId = CurrentTenant.Id,
+                CourseId = ActiveCourse.Id.Value,
+                CreationTime = oldReport.CreationTime
+            };
 
             var uniqueRegulationIds = input.DcpClassReports.SelectMany(x => x.Faults).Distinct().Select(x => x.RegulationId).ToList();
             var regulations = await _regulationsRepo.AsNoTracking().Where(x => uniqueRegulationIds.Contains(x.Id)).ToListAsync();
@@ -254,6 +256,7 @@ namespace Scool.ApplicationServices
         public async override Task<DcpReportDto> GetAsync(Guid id)
         {
             var report = await _dcpReportsRepo.AsNoTracking()
+                .Include(x => x.CreatorAccount)
                 .Where(x => x.Id == id)
                 .Select(x => ObjectMapper.Map<DcpReport, DcpReportDto>(x))
                 .FirstOrDefaultAsync();
