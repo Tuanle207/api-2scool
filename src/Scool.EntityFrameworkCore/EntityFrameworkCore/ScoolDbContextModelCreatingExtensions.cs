@@ -212,6 +212,12 @@ namespace Scool.EntityFrameworkCore
                 b.ConfigureByConvention();
             });
 
+            builder.Entity<AppSetting>(b =>
+            {
+                b.ToTable(ScoolConsts.DbTablePrefix + nameof(AppSetting), ScoolConsts.DbSchema);
+                b.ConfigureByConvention();
+            });
+
             // builder.Entity<YourEntityHere>( b =>
             // {
             //     b.ToTable(ScoolConsts.DbTablePrefix + nameof(YourEntityHere), ScoolConsts.DbSchema);

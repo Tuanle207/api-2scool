@@ -50,6 +50,7 @@ namespace Scool.EntityFrameworkCore
         public DbSet<DcpStudentReport> DcpStudentReports { get; set; }
         public DbSet<AppNotification> AppNotifications { get; set; }
         public DbSet<UserNotificationCount> UserNotificationCounts { get; set; }
+        public DbSet<AppSetting> AppSettings { get; set; }
 
 
 
