@@ -87,8 +87,8 @@ namespace Scool.ApplicationServices
                     (
                         C.Status = N'{DcpReportStatus.Approved}' AND 
                         (
-                            DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                            DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                            DATEDIFF(SECOND, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                            DATEDIFF(SECOND, C.CreationTime, '{input.EndTime}') >= 0
                         )
                     )
                 GROUP BY A.Id
@@ -126,8 +126,8 @@ namespace Scool.ApplicationServices
                     (
                         D.Status = N'{DcpReportStatus.Approved}' AND 
                         (
-                            DATEDIFF(DAY, '{input.StartTime}', D.CreationTime) >= 0 AND 
-                            DATEDIFF(DAY, D.CreationTime, '{input.EndTime}') >= 0
+                            DATEDIFF(SECOND, '{input.StartTime}', D.CreationTime) >= 0 AND 
+                            DATEDIFF(SECOND, D.CreationTime, '{input.EndTime}') >= 0
                         )
                     )
                 GROUP BY A.Id
@@ -172,8 +172,8 @@ namespace Scool.ApplicationServices
 		                    (
 			                    B.Status = N'Approved' AND 
 			                    (
-				                    DATEDIFF(DAY, '{input.StartTime}', B.CreationTime) >= 0 AND 
-				                    DATEDIFF(DAY, B.CreationTime, '{input.EndTime}') >= 0
+				                    DATEDIFF(SECOND, '{input.StartTime}', B.CreationTime) >= 0 AND 
+				                    DATEDIFF(SECOND, B.CreationTime, '{input.EndTime}') >= 0
 			                    )
 		                    )
 	                    GROUP BY A.Id
@@ -219,8 +219,8 @@ namespace Scool.ApplicationServices
                                 (
                                     C.Status = N'{DcpReportStatus.Approved}' AND 
                                     ( 
-                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                        DATEDIFF(SECOND, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                        DATEDIFF(SECOND, C.CreationTime, '{input.EndTime}') >= 0
                                     )
                                 )
 		                    GROUP BY A.ID
@@ -279,8 +279,8 @@ namespace Scool.ApplicationServices
                                 (
                                     C.Status = N'{DcpReportStatus.Approved}' AND 
                                     ( 
-                                        DATEDIFF(DAY, '{input.StartTime}', C.CreationTime) >= 0 AND 
-                                        DATEDIFF(DAY, C.CreationTime, '{input.EndTime}') >= 0
+                                        DATEDIFF(SECOND, '{input.StartTime}', C.CreationTime) >= 0 AND 
+                                        DATEDIFF(SECOND, C.CreationTime, '{input.EndTime}') >= 0
                                     )
                                 )
 		                    GROUP BY A.ID
@@ -332,8 +332,8 @@ namespace Scool.ApplicationServices
 		                        (
 			                        B.Status = N'Approved' AND 
 			                        (
-				                        DATEDIFF(DAY, '{input.StartTime}', B.CreationTime) >= 0 AND 
-				                        DATEDIFF(DAY, B.CreationTime, '{input.EndTime}') >= 0
+				                        DATEDIFF(SECOND, '{input.StartTime}', B.CreationTime) >= 0 AND 
+				                        DATEDIFF(SECOND, B.CreationTime, '{input.EndTime}') >= 0
 			                        )
 		                        )
 	                        GROUP BY A.Id
@@ -376,8 +376,8 @@ namespace Scool.ApplicationServices
                     (
                         E.Status = N'{DcpReportStatus.Approved}' AND 
                         (
-                            DATEDIFF(DAY, '{input.StartTime}', E.CreationTime) >= 0 AND 
-                            DATEDIFF(DAY, E.CreationTime, '{input.EndTime}') >= 0
+                            DATEDIFF(SECOND, '{input.StartTime}', E.CreationTime) >= 0 AND 
+                            DATEDIFF(SECOND, E.CreationTime, '{input.EndTime}') >= 0
                         )
                     )
                 GROUP BY A.Id
@@ -602,11 +602,6 @@ namespace Scool.ApplicationServices
         public async Task<PagingModel<ClassFaultDetail>> GetClassFaultDetails([FromRoute(Name = "classId")] Guid classId, TimeFilterDto filter)
         {
             var (startTime, endTime) = ParseDateTime(filter);
-
-            var query = _dcpClassReportsRepo.AsNoTracking()
-                .Include(x => x.DcpReport)
-                .Where(x => x.ClassId == classId && x.DcpReport.Status == DcpReportStatus.Approved && x.DcpReport.CreationTime.Date >= startTime.Date && x.DcpReport.CreationTime.Date <= endTime.Date)
-                .ToQueryString();
 
             var classReportIdTimes = await _dcpClassReportsRepo.AsNoTracking()
                 .Include(x => x.DcpReport)
@@ -946,8 +941,8 @@ namespace Scool.ApplicationServices
             return new StatisticsQueryInput
             {
                 StartPoints = weeks * 100,
-                StartTime = startDate.ToString("MM/dd/yyyy"),
-                EndTime = timeFilter.EndTime.ToString("MM/dd/yyyy"),
+                StartTime = startDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                EndTime = timeFilter.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                 Weeks = weeks
             };
         }

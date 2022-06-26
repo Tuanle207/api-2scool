@@ -88,7 +88,7 @@ namespace Scool.Infrastructure.Linq
                         var valueType = Nullable.GetUnderlyingType(left.Type) ?? left.Type;
                         typedValue = valueType.IsEnum ? Enum.Parse(valueType, value) :
                             valueType == typeof(Guid) ? Guid.Parse(value) :
-                            valueType == typeof(DateTime) ? DateTime.ParseExact(value, "MM/dd/yyyy", CultureInfo.InvariantCulture) :
+                            valueType == typeof(DateTime) ? DateTime.ParseExact(value, "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture) :
                             Convert.ChangeType(value, valueType);
                     }
                     catch (Exception ex)
