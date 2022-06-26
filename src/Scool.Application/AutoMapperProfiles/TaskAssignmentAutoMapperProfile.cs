@@ -8,7 +8,8 @@ namespace Scool.AutoMapperProfiles
     {
         public TaskAssignmentAutoMapperProfile()
         {
-            CreateMap<TaskAssignment, TaskAssignmentDto>();
+            CreateMap<TaskAssignment, TaskAssignmentDto>()
+                .ForMember(dest => dest.Creator, opt => opt.MapFrom(src => src.CreatorAccount));
             CreateMap<TaskAssignment, TaskAssignmentForUpdateDto>();
         }
     }
