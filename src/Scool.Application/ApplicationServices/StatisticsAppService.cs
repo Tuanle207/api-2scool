@@ -929,8 +929,8 @@ namespace Scool.ApplicationServices
 
         private StatisticsQueryInput ParseQueryInput(TimeFilterDto timeFilter, bool byWeek = true)
         {
-            var startDate = byWeek && timeFilter.StartTime.DayOfWeek != DayOfWeek.Monday ?
-                timeFilter.StartTime.AddDays(7).StartOfWeek() : timeFilter.StartTime;
+            var startDate = byWeek && timeFilter.StartTime.AddHours(7).DayOfWeek != DayOfWeek.Monday ?
+                timeFilter.StartTime.AddDays(7).StartOfWeek().AddHours(-7) : timeFilter.StartTime;
             var durations = timeFilter.EndTime - startDate;
             var weeks = (int)Math.Ceiling(durations.TotalDays / 7);
             if (weeks == 0)
@@ -949,8 +949,8 @@ namespace Scool.ApplicationServices
 
         private (DateTime, DateTime) ParseDateTime(TimeFilterDto timeFilter, bool byWeek = true)
         {
-            var startDate = byWeek && timeFilter.StartTime.DayOfWeek != DayOfWeek.Monday ?
-                timeFilter.StartTime.AddDays(7).StartOfWeek() : timeFilter.StartTime;
+            var startDate = byWeek && timeFilter.StartTime.AddHours(7).DayOfWeek != DayOfWeek.Monday ?
+                timeFilter.StartTime.AddDays(7).StartOfWeek().AddHours(-7) : timeFilter.StartTime;
 
             return (startDate.Date, timeFilter.EndTime.Date);
         }

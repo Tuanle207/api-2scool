@@ -56,14 +56,15 @@ namespace Scool.ApplicationServices
             return await base.CreateAsync(input);
         }
 
-        public override Task DeleteAsync(Guid id)
+        public override async Task DeleteAsync(Guid id)
         {
-            return base.DeleteAsync(id);
+            await base.DeleteAsync(id);
+            await CurrentUnitOfWork.SaveChangesAsync();
         }
 
-        public override Task<Volo.Abp.TenantManagement.TenantDto> UpdateAsync(Guid id, Volo.Abp.TenantManagement.TenantUpdateDto input)
+        public override async Task<Volo.Abp.TenantManagement.TenantDto> UpdateAsync(Guid id, Volo.Abp.TenantManagement.TenantUpdateDto input)
         {
-            return base.UpdateAsync(id, input);
+            return await base.UpdateAsync(id, input);
         }
 
         public async Task<PagingModel<TenantDto>> PostPaging(PageInfoRequestDto input)
@@ -71,10 +72,6 @@ namespace Scool.ApplicationServices
             int pageSize = input.PageSize > 0 ? input.PageSize : 10;
             int pageIndex = input.PageIndex > 0 ? input.PageIndex : 1;
             string name = input.Filter.FirstOrDefault(x => x.Key == "Name")?.Value.ToLower() ?? string.Empty;
-
-            var rawItems = await _tenantRepository.ToEfCoreRepository()
-                .AsNoTracking()
-                .ToListAsync();
 
             IQueryable<Tenant> query = _tenantRepository.ToEfCoreRepository()
                 .AsNoTracking()
