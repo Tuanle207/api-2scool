@@ -8,5 +8,7 @@
         public const string Create = Permission + ".Create";
         public const string Update = Permission + ".Update";
         public const string Delete = Permission + ".Delete";
+
+        public const string Students = Permission + ".Students";
     }
 }

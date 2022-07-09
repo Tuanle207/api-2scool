@@ -42,7 +42,7 @@ namespace Scool.ApplicationServices
             }
 
             var regulations = await _regulationsRepo
-                .Where(x => x.IsActive == true && x.CourseId == ActiveCourse.Id.Value)
+                .Where(x => x.IsActive && x.CourseId == ActiveCourse.Id.Value)
                 .Include(x => x.Criteria)
                 .OrderBy(x => x.DisplayName)
                 .Select(x => ObjectMapper.Map<Regulation, RegulationForSimpleListDto>(x))
@@ -69,7 +69,7 @@ namespace Scool.ApplicationServices
             
             var query = _regulationsRepo.AsNoTracking()
                 .Filter(input.Filter)
-                .Where(x => x.IsActive == true && x.CourseId == ActiveCourse.Id.Value);
+                .Where(x => x.IsActive && x.CourseId == ActiveCourse.Id.Value);
             
             var totalCount = await query.CountAsync();
             
@@ -92,6 +92,7 @@ namespace Scool.ApplicationServices
             // Create new regulation as new updation
             var newRegulation = ObjectMapper.Map<CreateUpdateRegulationDto, Regulation>(input);
             newRegulation.TenantId = CurrentTenant.Id;
+            newRegulation.CourseId = ActiveCourse.Id.Value;
             await _regulationsRepo.InsertAsync(newRegulation);
             await CurrentUnitOfWork.SaveChangesAsync();
             

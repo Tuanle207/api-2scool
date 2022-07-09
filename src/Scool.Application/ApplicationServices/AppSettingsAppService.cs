@@ -7,7 +7,6 @@ using Scool.Infrastructure.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
@@ -38,7 +37,7 @@ namespace Scool.ApplicationServices
             return new PagingModel<AppSettingDto>(items);
         }
 
-        public async Task<PagingModel<AppSettingDto>> GetReportsAppSetting()
+        public async Task<PagingModel<AppSettingDto>> GetReportAppSetting()
         {
             var items = await _appSettingRepository
                 .AsNoTracking()
@@ -49,7 +48,7 @@ namespace Scool.ApplicationServices
             return new PagingModel<AppSettingDto>(items);
         }
 
-        public async Task UpdateAppSetting(List<AppSettingDto> settings)
+        public async Task UpdateReportAppSetting(List<CreateUpdateAppSettingDto> settings)
         {
             if (!CurrentTenant.Id.HasValue)
             {
@@ -70,11 +69,12 @@ namespace Scool.ApplicationServices
                         TenantId = CurrentTenant.Id,
                         Value = dto?.Value ?? string.Empty
                     };
-                } else
+                    await _appSettingRepository.InsertAsync(setting);
+                }
+                else
                 {
                     setting.Value = dto?.Value;
                 }
-                await _appSettingRepository.InsertAsync(setting);
             }
 
             await CurrentUnitOfWork.SaveChangesAsync();

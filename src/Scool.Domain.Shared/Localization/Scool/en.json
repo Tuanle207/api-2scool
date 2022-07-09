@@ -5,6 +5,8 @@
     "Welcome": "Welcome",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io.",
 
+    "Permission:AbpIdentity:AbpIdentity.Users.Get": "Get Users List",
+
     "Permission:Courses": "Courses Management",
     "Permission:Courses:Courses": "Courses",
     "Permission:Courses:Courses.Create": "Create courses",
@@ -12,6 +14,7 @@
     "Permission:Courses:Courses.Delete": "Delete courses",
     "Permission:Courses:Courses.Get": "Get course detail",
     "Permission:Courses:Courses.GetAll": "Get courses",
+    "Permission:Courses:Courses.Students": "Students Management",
 
     "Permission:Rules": "Regulations Management",
     "Permission:Rules:Rules": "Regulations",

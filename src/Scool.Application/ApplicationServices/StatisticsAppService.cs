@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scool.AppConsts;
+using Scool.AppSettings;
 using Scool.Common;
 using Scool.Dtos;
 using Scool.Email;
@@ -36,6 +37,7 @@ namespace Scool.ApplicationServices
         private readonly IRepository<Regulation, Guid> _regulationsRepo;
         private readonly ScoolDbContext _context;
         private readonly IEmailSender _emailSender;
+        private readonly IAppSettingManager _appSettingManager;
 
         public StatisticsAppService(IRepository<DcpReport, Guid> dcpReportsRepo,
             IRepository<DcpClassReport, Guid> dcpClassReportsRepo,
@@ -46,7 +48,8 @@ namespace Scool.ApplicationServices
             IRepository<Class, Guid> classesRepo,
             IRepository<Regulation, Guid> regulationsRepo,
             IRepository<Teacher, Guid> teachersRepo,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IAppSettingManager appSettingManager)
         {
             _dcpReportsRepo = dcpReportsRepo;
             _dcpClassReportsRepo = dcpClassReportsRepo;
@@ -58,12 +61,13 @@ namespace Scool.ApplicationServices
             _regulationsRepo = regulationsRepo;
             _teachersRepo = teachersRepo;
             _emailSender = emailSender;
+            _appSettingManager = appSettingManager;
         }
 
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<DcpClassFault>> GetClassesFaults(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter);
+            var input = ParseQueryInput(timeFilter, 0);
 
             var query = _context.DcpClassFaults.FromSqlRaw(@$"
                 SET ARITHABORT ON;
@@ -106,7 +110,7 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<CommonDcpFault>> GetCommonFaults(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter, false);
+            var input = ParseQueryInput(timeFilter, 0, false);
 
             var query = _context.CommonDcpFaults.FromSqlRaw(@$"
                 SET ARITHABORT ON;
@@ -146,11 +150,13 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Rankings)]
         public async Task<PagingModel<OverallClassRanking>> GetOverallRanking(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter);
+            var reportSettings = await _appSettingManager.GetReportSettingValuesAsync();
+            int startPoint = int.Parse(reportSettings.GetValueOrDefault(AppSettingTypeCode.StartDcpPoint));
+            int lrRatio = int.Parse(reportSettings.GetValueOrDefault(AppSettingTypeCode.LrPointRatio));
+            int dcpRatio = int.Parse(reportSettings.GetValueOrDefault(AppSettingTypeCode.DcpPointRatio));
+            int totalRatio = lrRatio + dcpRatio;
 
-            const int LRRatio = 2;
-            const int DCPRatio = 1;
-            const int TotalRatio = LRRatio + DCPRatio;
+            var input = ParseQueryInput(timeFilter, startPoint);
 
             var queryString = @$"
                 WITH LR AS
@@ -196,7 +202,7 @@ namespace Scool.ApplicationServices
 	                DCP.PenaltyPoints,
 	                LR.LrPoints,
 	                DCP.DcpPoints,
-	                CONVERT(int, ROUND((LR.LrPoints * {LRRatio} + DCP.DcpPoints * {DCPRatio}) / {TotalRatio}, 0)) RankingPoints
+	                CONVERT(int, ROUND((LR.LrPoints * {lrRatio} + DCP.DcpPoints * {dcpRatio}) / {totalRatio}, 0)) RankingPoints
 	                FROM
 	                (
 	                    SELECT 
@@ -238,13 +244,20 @@ namespace Scool.ApplicationServices
 
             var items = await query.ToListAsync();
 
+            foreach (var item in items)
+            {
+                item.PenaltyPoints = -item.PenaltyPoints;
+            }
+
             return new PagingModel<OverallClassRanking>(items, items.Count);
         }
 
         [Authorize(StatsPermissions.Rankings)]
         public async Task<PagingModel<DcpClassRanking>> GetDcpRanking(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter);
+            var reportSettings = await _appSettingManager.GetReportSettingValuesAsync();
+            int startPoint = int.Parse(reportSettings.GetValueOrDefault(AppSettingTypeCode.StartDcpPoint));
+            var input = ParseQueryInput(timeFilter, startPoint);
 
             var query = _context.DcpClassRankings.FromSqlRaw(@$"
                 SET ARITHABORT ON;
@@ -295,13 +308,18 @@ namespace Scool.ApplicationServices
 
             var items = await query.ToListAsync();
 
+            foreach (var item in items)
+            {
+                item.PenaltyPoints = -item.PenaltyPoints;
+            }
+
             return new PagingModel<DcpClassRanking>(items, items.Count);
         }
 
         [Authorize(StatsPermissions.Rankings)]
         public async Task<PagingModel<LrClassRanking>> GetLrRanking(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter);
+            var input = ParseQueryInput(timeFilter, 0);
 
             var query = _context.LrClassRankings.FromSqlRaw(@$"
                SET ARITHABORT ON;
@@ -354,7 +372,7 @@ namespace Scool.ApplicationServices
         [Authorize(StatsPermissions.Statistics)]
         public async Task<PagingModel<StudentWithMostFaults>> GetStudentsWithMostFaults(TimeFilterDto timeFilter)
         {
-            var input = ParseQueryInput(timeFilter, false);
+            var input = ParseQueryInput(timeFilter, 0, false);
 
             var query = _context.StudentWithMostFaults.FromSqlRaw(@$"
                 SET ARITHABORT ON;
@@ -647,7 +665,7 @@ namespace Scool.ApplicationServices
                     RegulationName = regulation.Name,
                     CriteriaName = regulation.Criteria.Name,
                     CreationTime = reportIdTime.Value,
-                    PenaltyPoints = reportItem.PenaltyPoint,
+                    PenaltyPoints = -reportItem.PenaltyPoint,
                     StudentNames = reportstudents.Select(x => x.Name).JoinAsString(", "),
                 });
             }
@@ -706,7 +724,7 @@ namespace Scool.ApplicationServices
                 {
                     Id = reportItem.Id,
                     CreationTime = reportIdTime.Value,
-                    PenaltyPoints = reportItem.PenaltyPoint,
+                    PenaltyPoints = -reportItem.PenaltyPoint,
                     StudentNames = reportstudents.Select(x => x.Name).JoinAsString(", "),
                     ClassName = className
                 });
@@ -756,7 +774,7 @@ namespace Scool.ApplicationServices
                 {
                     Id = reportItem.Id,
                     CreationTime = reportIdTime.Value,
-                    PenaltyPoints = reportItem.PenaltyPoint,
+                    PenaltyPoints = -reportItem.PenaltyPoint,
                     RegulationName = regulation.Name,
                     CriteriaName = regulation.Name,
                     Count = 1
@@ -927,7 +945,7 @@ namespace Scool.ApplicationServices
             return $"{expression} IS NULL";
         }
 
-        private StatisticsQueryInput ParseQueryInput(TimeFilterDto timeFilter, bool byWeek = true)
+        private StatisticsQueryInput ParseQueryInput(TimeFilterDto timeFilter, int startPoint, bool byWeek = true)
         {
             var startDate = byWeek && timeFilter.StartTime.AddHours(7).DayOfWeek != DayOfWeek.Monday ?
                 timeFilter.StartTime.AddDays(7).StartOfWeek().AddHours(-7) : timeFilter.StartTime;
@@ -940,7 +958,7 @@ namespace Scool.ApplicationServices
 
             return new StatisticsQueryInput
             {
-                StartPoints = weeks * 100,
+                StartPoints = weeks * startPoint,
                 StartTime = startDate.ToString("yyyy-MM-ddTHH:mm:ss"),
                 EndTime = timeFilter.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                 Weeks = weeks
@@ -959,7 +977,7 @@ namespace Scool.ApplicationServices
         {
 
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê lớp vi phạm");
+            var ws = wb.AddWorksheet("Thống kê nề nếp lớp");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -973,8 +991,8 @@ namespace Scool.ApplicationServices
             ws.Cell(3, 1).SetValue("Mã lớp");
             ws.Cell(3, 2).SetValue("Tên lớp");
             ws.Cell(3, 3).SetValue("Giáo viên chủ nhiệm");
-            ws.Cell(3, 4).SetValue("Lượt vi phạm");
-            ws.Cell(3, 5).SetValue("Tổng điểm trừ");
+            ws.Cell(3, 4).SetValue("Lượt chấm");
+            ws.Cell(3, 5).SetValue("Tổng điểm chấm");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1025,8 +1043,8 @@ namespace Scool.ApplicationServices
             ws.Cell(3, 2).SetValue("Tên lớp");
             ws.Cell(3, 3).SetValue("Giáo viên chủ nhiệm");
             ws.Cell(3, 4).SetValue("Lượt vắng");
-            ws.Cell(3, 5).SetValue("Lượt vi phạm");
-            ws.Cell(3, 6).SetValue("Điểm trừ");
+            ws.Cell(3, 5).SetValue("Lượt chấm nề nếp");
+            ws.Cell(3, 6).SetValue("Điểm chấm nề nếp");
             ws.Cell(3, 7).SetValue("Điểm sổ đầu bài");
             ws.Cell(3, 8).SetValue("Điểm nề nếp");
             ws.Cell(3, 9).SetValue("Điểm thi đua");
@@ -1073,7 +1091,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<DcpClassRanking> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Báo cáo xếp hạng thi đua nề nếp");
+            var ws = wb.AddWorksheet("Báo cáo xếp hạng nề nếp");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1088,8 +1106,8 @@ namespace Scool.ApplicationServices
             ws.Cell(3, 1).SetValue("Thứ hạng");
             ws.Cell(3, 2).SetValue("Tên lớp");
             ws.Cell(3, 3).SetValue("Giáo viên chủ nhiệm");
-            ws.Cell(3, 4).SetValue("Lượt vi phạm");
-            ws.Cell(3, 5).SetValue("Điểm trừ");
+            ws.Cell(3, 4).SetValue("Lượt chấm");
+            ws.Cell(3, 5).SetValue("Điểm chấm");
             ws.Cell(3, 6).SetValue("Tổng điểm");
 
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1125,7 +1143,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<LrClassRanking> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Báo cáo xếp hạng sổ đầu bài");
+            var ws = wb.AddWorksheet("Báo cáo xếp hạng điểm SĐB");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1172,7 +1190,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<CommonDcpFault> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê lỗi vi phạm");
+            var ws = wb.AddWorksheet("Thống kê quy định nề nếp");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1184,9 +1202,9 @@ namespace Scool.ApplicationServices
             ws.Column(5).Width = 20;
 
             ws.Cell(3, 1).SetValue("Mã quy định");
-            ws.Cell(3, 2).SetValue("Tên vi phạm");
+            ws.Cell(3, 2).SetValue("Tên quy định");
             ws.Cell(3, 3).SetValue("Tiêu chí");
-            ws.Cell(3, 4).SetValue("Lượt vi phạm");
+            ws.Cell(3, 4).SetValue("Lượt chấm");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1213,7 +1231,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<StudentWithMostFaults> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê học sinh vi phạm");
+            var ws = wb.AddWorksheet("Thống kê nề nếp học sinh");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1227,7 +1245,7 @@ namespace Scool.ApplicationServices
             ws.Cell(3, 1).SetValue("Mã học sinh");
             ws.Cell(3, 2).SetValue("Tên học sinh");
             ws.Cell(3, 3).SetValue("Thuộc lớp");
-            ws.Cell(3, 4).SetValue("Số vi phạm");
+            ws.Cell(3, 4).SetValue("Lượt chấm");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1254,7 +1272,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<ClassFaultDetail> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            var ws = wb.AddWorksheet("Thống kê chi tiết nề nếp lớp");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1270,8 +1288,8 @@ namespace Scool.ApplicationServices
             ws.Cell(3, 2).SetValue("Thời gian");
             ws.Cell(3, 3).SetValue("Tên quy định");
             ws.Cell(3, 4).SetValue("Tiêu chí");
-            ws.Cell(3, 5).SetValue("Tổng điểm trừ");
-            ws.Cell(3, 6).SetValue("Học sinh vi phạm");
+            ws.Cell(3, 5).SetValue("Tổng điểm");
+            ws.Cell(3, 6).SetValue("Học sinh liên quan");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1304,7 +1322,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<FaultDetail> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            var ws = wb.AddWorksheet("Thống kê chi tiết quy định nề nếp");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1315,11 +1333,11 @@ namespace Scool.ApplicationServices
             ws.Column(4).Width = 20;
             ws.Column(5).Width = 40;
 
-            ws.Cell(3, 1).SetValue("Mã vi phạm");
+            ws.Cell(3, 1).SetValue("Mã quy định");
             ws.Cell(3, 2).SetValue("Thời gian");
-            ws.Cell(3, 3).SetValue("Tổng điểm trừ");
-            ws.Cell(3, 4).SetValue("Lớp vi phạm");
-            ws.Cell(3, 5).SetValue("Học sinh vi phạm");
+            ws.Cell(3, 3).SetValue("Tổng điểm");
+            ws.Cell(3, 4).SetValue("Lớp");
+            ws.Cell(3, 5).SetValue("Học sinh liên quan");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
@@ -1349,7 +1367,7 @@ namespace Scool.ApplicationServices
         private static XLWorkbook GenerateTemplate(List<StudentFaultDetail> stats, TimeFilterDto timeFilter)
         {
             var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Thống kê vi phạm");
+            var ws = wb.AddWorksheet("Thống kê chi tiết nề nếp học sinh");
             ws.Cell(1, 1).SetValue("Từ ngày");
             ws.Cell(1, 2).SetValue(timeFilter.StartTime.ToString("dd'/'MM'/'yyyy", CultureInfo.InvariantCulture));
             ws.Cell(1, 3).SetValue("Đến ngày");
@@ -1360,11 +1378,11 @@ namespace Scool.ApplicationServices
             ws.Column(4).Width = 20;
             ws.Column(5).Width = 20;
 
-            ws.Cell(3, 1).SetValue("Mã vi phạm");
+            ws.Cell(3, 1).SetValue("Mã quy định");
             ws.Cell(3, 2).SetValue("Thời gian");
             ws.Cell(3, 3).SetValue("Quy định");
             ws.Cell(3, 4).SetValue("Tiêu chí");
-            ws.Cell(3, 5).SetValue("Điểm trừ");
+            ws.Cell(3, 5).SetValue("Điểm");
             ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 2).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);
             ws.Cell(3, 3).Style.Fill.BackgroundColor = XLColor.FromArgb(0, 255, 0);

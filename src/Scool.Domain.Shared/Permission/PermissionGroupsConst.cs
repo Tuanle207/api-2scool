@@ -7,5 +7,6 @@
         public const string Dcp = "Dcp";
         public const string Stats = "Stats";
         public const string TaskAssignment = "TaskAssignment";
+        public const string Identity = "Identity";
     }
 }

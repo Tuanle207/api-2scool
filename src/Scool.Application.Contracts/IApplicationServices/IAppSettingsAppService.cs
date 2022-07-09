@@ -10,8 +10,8 @@ namespace Scool.IApplicationServices
     {
         Task<PagingModel<AppSettingDto>> GetAllAppSetting();
 
-        Task<PagingModel<AppSettingDto>> GetReportsAppSetting();
+        Task<PagingModel<AppSettingDto>> GetReportAppSetting();
 
-        Task UpdateAppSetting(List<AppSettingDto> settings);
+        Task UpdateReportAppSetting(List<CreateUpdateAppSettingDto> settings);
     }
 }

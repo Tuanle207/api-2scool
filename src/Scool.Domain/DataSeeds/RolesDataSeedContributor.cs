@@ -39,13 +39,6 @@ namespace Scool.DataSeeds
             {
                 _logger.LogInformation("Start to seed roles and permissions");
 
-                var roleNames = new List<string> {
-                    AppRole.Admin,
-                    AppRole.DcpManager,
-                    AppRole.DcpReporterStudent,
-                    AppRole.LessonsRegisterReporter
-                };
-
                 var currentRoles = await _identityRoleRepository.ToListAsync();
                 
                 // App Admin
@@ -65,11 +58,19 @@ namespace Scool.DataSeeds
                         CoursesPermissions.Update,
                         CoursesPermissions.Delete,
                         CoursesPermissions.Create,
+                        CoursesPermissions.Students,
+
+                        IdentityPermissions.Roles.Default,
+                        IdentityPermissions.Roles.Create,
+                        IdentityPermissions.Roles.Update,
+                        IdentityPermissions.Roles.Delete,
+                        IdentityPermissions.Roles.ManagePermissions,
 
                         IdentityPermissions.Users.Default,
                         IdentityPermissions.Users.Create,
                         IdentityPermissions.Users.Update,
                         IdentityPermissions.Users.Delete,
+                        IdentityPermissions.Users.Get,
                         IdentityPermissions.Users.ManagePermissions,
                     };
                     var adminRolePermissions = adminRolePermissionNames
@@ -96,6 +97,10 @@ namespace Scool.DataSeeds
                     };
                     var dcpManagerRolePermissionNames = new List<string>
                     {
+                        IdentityPermissions.Users.Get,
+
+                        CoursesPermissions.Students,
+
                         RulesPermissions.Permission,
                         RulesPermissions.Get,
                         RulesPermissions.GetAll,
@@ -128,12 +133,6 @@ namespace Scool.DataSeeds
 
                         StatsPermissions.Rankings,
                         StatsPermissions.Statistics,
-
-                        IdentityPermissions.Users.Default,
-                        IdentityPermissions.Users.Create,
-                        IdentityPermissions.Users.Update,
-                        IdentityPermissions.Users.Delete,
-                        IdentityPermissions.Users.ManagePermissions,
                     };
                     var dcpManagerRolePermissions = dcpManagerRolePermissionNames
                         .Select(x => new PermissionGrant(

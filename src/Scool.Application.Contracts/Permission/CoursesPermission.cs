@@ -36,6 +36,9 @@ namespace Scool.Permission
 
             coursePermission.AddChild(CoursesPermissions.Delete,
                 L(prefix + CoursesPermissions.Delete));
+
+            coursePermission.AddChild(CoursesPermissions.Students,
+               L(prefix + CoursesPermissions.Students));
         }
 
         private static LocalizableString L(string name)

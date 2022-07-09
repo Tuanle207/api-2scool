@@ -21,11 +21,16 @@ using Scool.ObjectExtentions;
 using Scool.Common;
 using Scool.IApplicationServices;
 using Scool.Email;
+using Microsoft.AspNetCore.Authorization;
+using Scool.Infrastructure.Helpers;
+using Volo.Abp.TenantManagement;
+using Scool.Domain.Shared.AppConsts;
+using Volo.Abp.Application.Dtos;
 
 namespace Scool.ApplicationServices
 {
     [Dependency(ReplaceServices = true)]
-    [ExposeServices(typeof(IIdentityUserAppService), typeof(IdentityUserAppService), typeof(IdentityAppService))]
+    [ExposeServices(typeof(IIdentityUserAppService), typeof(IdentityUserAppService), typeof(IdentityAppService), typeof(IIdentityAppService))]
     public class IdentityAppService : IdentityUserAppService, IIdentityAppService
     {
         private static readonly int PASSWORD_REQUIRED_MIN_LENGTH = 6;
@@ -41,6 +46,7 @@ namespace Scool.ApplicationServices
         private readonly IRepository<Account, Guid> _accountRepository;
         private readonly IRepository<Student, Guid> _studentRepository;
         private readonly IRepository<Teacher, Guid> _teacherRepository;
+        private readonly ITenantRepository _tenantRepository;
         private readonly IEmailSender _emailSender;
 
         public IdentityAppService(
@@ -52,7 +58,8 @@ namespace Scool.ApplicationServices
             IRepository<Student, Guid> studentRepository,
             IRepository<Teacher, Guid> teacherRepository,
             ISettingManager settingManager,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            ITenantRepository tenantRepository)
         : base(identityUserManager, identityUserRepository, identityRoleRepository, identityOptions)
         {
             _identityUserRepository = identityUserRepository;
@@ -62,8 +69,10 @@ namespace Scool.ApplicationServices
             _emailSender = emailSender;
             _studentRepository = studentRepository;
             _teacherRepository = teacherRepository;
+            _tenantRepository = tenantRepository;
         }
 
+        [AllowAnonymous]
         public async override Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
         {
             var studentIdStr = (string)input.ExtraProperties.GetOrDefault(IdentityUserCreateDtoExt.StudentId);
@@ -88,6 +97,7 @@ namespace Scool.ApplicationServices
                 input.RoleNames = new string[] { AppRole.DcpManager };
             }
             input.UserName = ParseUserNameFromEmail(input.Email);
+            input.Password = StringHelper.GetRandomPasswordString();
 
             await SetAccountOptionsAsync();
             var result = await base.CreateAsync(input);
@@ -97,17 +107,23 @@ namespace Scool.ApplicationServices
             account.TenantId = CurrentTenant.Id;
             await _accountRepository.InsertAsync(account);
 
+            var tenant = CurrentTenant.Id.HasValue ? await _tenantRepository.FindAsync(CurrentTenant.Id.Value) : null;
+            var appName = tenant == null ? "2Scool" : $"2Scool - {tenant.ExtraProperties[TenantSettingType.DisplayName]}";
             var emailBody = @$"
-                <p>Xin chào {account.DisplayName},</p>
-                <p>Tài khoản của bạn đã được tạo thành công trên hệ thống quản lý nề nếp 2Scool bằng địa chỉ email này!</p>
+                <p>Xin chào <strong>{account.DisplayName}</strong>,</p>
+                <p>Tài khoản của bạn đã được tạo thành công trên hệ thống quản lý nề nếp {appName}!</p>
                 <br>
-                <p>Vui lòng liên hệ với Quản Trị Viên Nề Nếp trường THPT của bạn để lấy mật khẩu đăng nhập.</p>
+                <p>Email đăng nhập: <strong>{input.Email}</strong></p>
+                <p>Mật khẩu đăng nhập: <strong>{input.Password}</strong></p>
                 <br>
-                <br>
-                <p>Hệ thống Quản Lý Nề Nếp THPT 2Scool</p>
-                <p>Thanks and Best regards.</p>
+                <p>Vui lòng đăng nhập và đổi mật khẩu</p>
             ";
-            //await _emailSender.QueueAsync(to: account.Email, subject: "Tài khoản 2Scool của bạn đã được tạo thành công", body: emailBody, isBodyHtml: false);
+            await _emailSender.QueueAsync(new SimpleEmailSendingArgs
+            {
+                Subject = "Tài khoản 2Scool của bạn đã được tạo thành công",
+                Body = emailBody,
+                To = new List<string> { account.Email }
+            });
 
             return result;
         }
@@ -118,6 +134,7 @@ namespace Scool.ApplicationServices
             return await base.UpdateAsync(id, input);
         }
 
+        [Authorize(Scool.Permission.IdentityPermissions.Users.Get)]
         public async Task<PagingModel<UserDto>> PostPaging(PageInfoRequestDto input)
         {
             int pageSize = input.PageSize > 0 ? input.PageSize : 10;
@@ -199,6 +216,22 @@ namespace Scool.ApplicationServices
                 .FirstOrDefaultAsync() ?? string.Empty;
         }
 
+        [HttpGet("api/app/identity/does-teacher-have-account-already")]
+        public async Task<string> DoesTeacherHaveAccountAlready([FromQuery] Guid teacherId)
+        {
+            var account = await _accountRepository.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.TeacherId == teacherId);
+            if (account is null)
+            {
+                return string.Empty;
+            }
+            return await _identityUserRepository.ToEfCoreRepository()
+                .AsNoTracking()
+                .Where(x => x.Id == account.UserId)
+                .Select(x => x.Email)
+                .FirstOrDefaultAsync() ?? string.Empty;
+        }
+
         [HttpGet("api/app/identity/is-role-name-already-used")]
         public Task<bool> IsRoleNameAlreadyUsed(Guid? roleId, string name)
         {
@@ -215,8 +248,22 @@ namespace Scool.ApplicationServices
             var account = await _accountRepository.FirstOrDefaultAsync(x => x.UserId == id);
             if (account != null)
             {
-                _accountRepository.DeleteAsync(account);
+                account.ClassId = null;
+                account.Student = null;
+                account.TeacherId = null;
+                await CurrentUnitOfWork.SaveChangesAsync();
+
+                await _accountRepository.DeleteAsync(account);
+                await CurrentUnitOfWork.SaveChangesAsync();
             }
+        }
+
+        [AllowAnonymous]
+        public override async Task<ListResultDto<IdentityRoleDto>> GetAssignableRolesAsync()
+        {
+            var list = await RoleRepository.GetListAsync();
+            return new ListResultDto<IdentityRoleDto>(
+                ObjectMapper.Map<List<IdentityRole>, List<IdentityRoleDto>>(list.Where(x => x.Name != "admin").ToList()));
         }
 
         private async Task SetAccountOptionsAsync()
@@ -249,7 +296,7 @@ namespace Scool.ApplicationServices
 
         private string ParseUserNameFromEmail(string email)
         {
-            if (string.IsNullOrEmpty(email) || (!string.IsNullOrEmpty(email) && !email.Contains("@")))
+            if (string.IsNullOrEmpty(email) || !email.Contains("@"))
             {
                 return string.Empty;
             }

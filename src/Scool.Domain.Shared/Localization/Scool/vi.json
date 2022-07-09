@@ -5,6 +5,8 @@
     "Welcome": "Chào mừng bạn",
     "LongWelcomeMessage": "Chào mừng bạn đến ứng dụng. Đây là một dự án khởi nghiệp dựa trên khung ABP. Để biết thêm thông tin, hãy truy cập abp.io.",
 
+    "Permission:AbpIdentity:AbpIdentity.Users.Get": "Xem danh sách người dùng",
+
     "Permission:Courses": "Quản Lý Khóa Học",
     "Permission:Courses:Courses": "Khóa học",
     "Permission:Courses:Courses.Create": "Tạo khóa học",
@@ -12,6 +14,7 @@
     "Permission:Courses:Courses.Delete": "Xóa khóa học",
     "Permission:Courses:Courses.Get": "Xem thông tin chi tiết khóa học",
     "Permission:Courses:Courses.GetAll": "Xem danh sách khóa học",
+    "Permission:Courses:Courses.Students": "Quản lý học sinh",
 
     "Permission:Rules": "Quản Lý Quy Định",
     "Permission:Rules:Rules": "Quy định",
