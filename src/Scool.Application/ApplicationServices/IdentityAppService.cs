@@ -116,7 +116,7 @@ namespace Scool.ApplicationServices
                 <p>Email đăng nhập: <strong>{input.Email}</strong></p>
                 <p>Mật khẩu đăng nhập: <strong>{input.Password}</strong></p>
                 <br>
-                <p>Vui lòng đăng nhập và đổi mật khẩu</p>
+                <p>Vui lòng đăng nhập và đổi mật khẩu.</p>
             ";
             await _emailSender.QueueAsync(new SimpleEmailSendingArgs
             {
@@ -264,6 +264,40 @@ namespace Scool.ApplicationServices
             var list = await RoleRepository.GetListAsync();
             return new ListResultDto<IdentityRoleDto>(
                 ObjectMapper.Map<List<IdentityRole>, List<IdentityRoleDto>>(list.Where(x => x.Name != "admin").ToList()));
+        }
+
+        [HttpPost("api/app/identity/reset-password/{userId}")]
+        public async Task<string> ResetUserPassWord(Guid userId)
+        {
+            var user = await UserManager.GetByIdAsync(userId);
+            var roles = await GetAssignableRolesAsync();
+            var rolenames = roles.Items.Where(x => user.Roles.Any(c => c.RoleId == x.Id))
+                .Select(x => x.Name)
+                .ToArray();
+            var userForUpdate = ObjectMapper.Map<IdentityUser, IdentityUserUpdateDto>(user);
+            userForUpdate.RoleNames = rolenames;
+            userForUpdate.Password = StringHelper.GetRandomPasswordString();
+            await UpdateAsync(userId, userForUpdate);
+
+            var tenant = CurrentTenant.Id.HasValue ? await _tenantRepository.FindAsync(CurrentTenant.Id.Value) : null;
+            var appName = tenant == null ? "2Scool" : $"2Scool - {tenant.ExtraProperties[TenantSettingType.DisplayName]}";
+            var emailBody = @$"
+                <p>Xin chào <strong>{userForUpdate.Name}</strong>,</p>
+                <p>Tài khoản của bạn đã được đặt lại mật khẩu trên hệ thống quản lý nề nếp {appName}!</p>
+                <br>
+                <p>Email đăng nhập: <strong>{userForUpdate.Email}</strong></p>
+                <p>Mật khẩu đăng nhập: <strong>{userForUpdate.Password}</strong></p>
+                <br>
+                <p>Vui lòng đăng nhập và đổi mật khẩu</p>
+            ";
+            await _emailSender.QueueAsync(new SimpleEmailSendingArgs
+            {
+                Subject = "Tài khoản 2Scool của bạn đã được đặt lại mật khẩu.",
+                Body = emailBody,
+                To = new List<string> { userForUpdate.Email }
+            });
+
+            return userForUpdate.Password;
         }
 
         private async Task SetAccountOptionsAsync()

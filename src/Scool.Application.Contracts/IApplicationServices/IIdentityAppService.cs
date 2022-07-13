@@ -17,5 +17,7 @@ namespace Scool.IApplicationServices
         Task<string> DoesTeacherHaveAccountAlready(Guid studentId);
 
         Task<bool> IsRoleNameAlreadyUsed(Guid? roleId, string name);
+
+        Task<string> ResetUserPassWord(Guid userId);
     }
 }

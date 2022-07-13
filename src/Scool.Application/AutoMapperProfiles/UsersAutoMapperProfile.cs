@@ -24,6 +24,8 @@ namespace Scool.AutoMapperProfiles
             CreateMap<IdentityUser, UserDto>()
                 .ConvertUsing(src => MapIdentityUserToUserDto(src));
 
+            CreateMap<IdentityUser, IdentityUserUpdateDto>();
+
             CreateMap<IdentityRole, RoleForSimpleListDto>()
                 .ForMember(dest => dest.Id, opt =>
                     opt.MapFrom(src => src.Id))
