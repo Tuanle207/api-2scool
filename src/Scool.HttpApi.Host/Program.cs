@@ -19,7 +19,9 @@ namespace Scool
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
-                .WriteTo.Async(c => c.File("Logs/logs.txt"))
+                .WriteTo.Async(c => c.File($"Logs/logs_.txt", rollingInterval: RollingInterval.Day))
+                .WriteTo.Logger(x => x.Filter.ByIncludingOnly(y => y.Level == LogEventLevel.Error || y.Level == LogEventLevel.Fatal)
+                .WriteTo.File("Logs/errors_.txt", rollingInterval: RollingInterval.Day))
 #if DEBUG
                 .WriteTo.Async(c => c.Console())
 #endif
